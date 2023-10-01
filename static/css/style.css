@@ -4,3 +4,14 @@ h1 {
     text-align: center;
     padding: 10px;
 }
+
+/* 
+ * Always set the map height explicitly to define the size of the div element
+ * that contains the map. 
+ */
+html, body, #map {
+    margin: auto;
+    padding: 0;
+    height: 100%;
+    width: 75%;
+}

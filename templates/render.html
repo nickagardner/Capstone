@@ -2,17 +2,8 @@
 
 {% block content %}
 <h1>{% block title %} RideWise Request {% endblock %}</h1>
-<form method="POST">
-    <div class="form-group">
-        <label for="content">Content</label>
-        <textarea name="content" placeholder="Modification Request"
-                    class="form-control">{{ request.form['content'] }}</textarea>
-    </div>
-    <div class="form-group">
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </div>
-</form>
 
+<!-- <p>Requests: {{ requests }}</p> -->
 <p>Function: {{ function }}</p>
 <p>Parameter: {{ input_text }}</p>
 {% endblock %}

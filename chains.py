@@ -3,9 +3,18 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
 )
+from langchain.schema import BaseOutputParser
 from langchain.chains import LLMChain
 
 import re
+
+class CommaSeparatedListOutputParser(BaseOutputParser):
+    """Parse the output of an LLM call to a comma-separated list."""
+
+
+    def parse(self, text: str):
+        """Parse the output of an LLM call."""
+        return text.strip().split(", ")
 
 def choose_func(text, llm):
     template = """You are a helpful assistant who parses text and determines what change the user is requesting. 
@@ -30,11 +39,45 @@ def choose_func(text, llm):
     )
     result = chain.run(text)
 
+    print(result)
+
     pattern = ".*Assistant:.*\)"
     match = re.search(pattern, result)[0]
 
     content = match.split("Assistant:")[-1]
-    function = content.split("(")[0]
+    function = content.split("(")[0].strip()
     parameter = " ".join(content.split("(")[-1].split(")")[0].split("_")).strip("\"\',.`")
 
     return function, parameter
+
+def split_changes(text, llm):
+    # template = """You are a helpful assistant who parses text and splits it into discrete requests. 
+    # A user will pass in one or more sentences containing change requests, which you should split into each 
+    # requested change and return as a comma separated list. Return ONLY a comma separated list and nothing more. 
+    # Do not add any characters that the user did not include in their request. 
+    
+    # For instance, if the user inputs: `prefer trails. avoid central park`, you should output: [`prefer trails`, `avoid central park`]. 
+    # If the user inputs: `avoid main street and prefer gravel paths`, you should output: [`avoid main street`, `prefer gravel paths`]"""
+
+    # system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+    # human_template = "{text}"
+    # human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    
+    # chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+    # chain = LLMChain(
+    #     llm=llm,
+    #     prompt=chat_prompt,
+    #     output_parser=CommaSeparatedListOutputParser()
+    # )
+    # result = chain.run(text)
+
+    # pattern = ".*Assistant:.*\)"
+    # match = re.search(pattern, result)[0]
+
+    # content = match.split("Assistant:")[-1]
+    # function = content.split("(")[0]
+    # parameter = " ".join(content.split("(")[-1].split(")")[0].split("_")).strip("\"\',.`")
+
+    result = text.split(".")
+
+    return result
