@@ -2,6 +2,7 @@ from langchain.llms import LlamaCpp
 from langchain.llms import OpenAI
 
 from dotenv import load_dotenv
+import os
 load_dotenv()
 
 from flask import Flask, render_template, request, jsonify
@@ -29,26 +30,29 @@ llm = LlamaCpp(
     verbose=True, # Verbose is required to pass to the callback manager
 )
 
-@app.route('/')
+@app.route('/', methods=["POST","GET"])
 def index():
-    return render_template('index.html')
+    if request.method == "POST":
+        todo = request.form.get("todo")
+        print(todo)
+    return render_template('index.html', 
+                           google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")
 
-@app.route('/', methods=['POST'])
-def plan():
-    changes = split_changes(request.form['content'], llm)
-    functions = []
-    parameters = []
-    for change in changes:
-        if len(change) > 0:
-            function, parameter = choose_func(change, llm)
-            functions.append(function)
-            parameters.append(parameter)
-            possibles = globals().copy()
-            possibles.update(locals())
-            method = possibles.get(function)
-            if not method:
-                raise NotImplementedError("Method %s not implemented" % function)
-            print(method(parameter))
+# @app.route('/', methods=['POST'])
+# def plan():
+#     changes = split_changes(request.form['content'], llm)
+#     functions = []
+#     parameters = []
+#     for change in changes:
+#         if len(change) > 0:
+#             function, parameter = choose_func(change, llm)
+#             functions.append(function)
+#             parameters.append(parameter)
+#             possibles = globals().copy()
+#             possibles.update(locals())
+#             method = possibles.get(function)
+#             if not method:
+#                 raise NotImplementedError("Method %s not implemented" % function)
+#             print(method(parameter))
 
-    return jsonify(message='success')
     # return render_template('render.html', function=functions, input_text=parameters) # requests=requests) 
