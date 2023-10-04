@@ -66,8 +66,6 @@ async function initMap(lat, lon) {
     bounds: defaultBounds
   });
 
-  const delay = ms => new Promise(res => setTimeout(res, ms));
-
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
     $.ajax({
@@ -76,20 +74,10 @@ async function initMap(lat, lon) {
       data:{
         todo:$("#todo").val()
       },
+      success: function(data) {
+        calcRoute()
+      }
     });
-    // fetch('/static/js/in_progress.txt')
-    // .then(async response => {
-    //   fetch('/static/js/done.txt')
-    //   .then(async response => {
-
-    const wait_for_write = async () => {
-      await delay(2000);
-      calcRoute();
-    };
-
-    wait_for_write();
-      // });
-    // });
   });
 
   $(document).on('submit','#clear-button',function(e) {
@@ -100,19 +88,11 @@ async function initMap(lat, lon) {
       data:{
         clear: 1
       },
+      success: function(data) {
+        calcRoute()
+      }
     });
-    const wait_for_write = async () => {
-      await delay(500);
-      calcRoute();
-    };
-    wait_for_write();
     $("#todo").val("");
-    // fetch('/static/js/in_progress.txt')
-    // .then(async response => {
-    //   fetch('/static/js/done.txt')
-    //   .then(async response => {
-      // });
-    // });
   });
 
   google.maps.event.addListener(end_box, 'places_changed', function(){
