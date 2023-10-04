@@ -5,11 +5,10 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 
-from utils import add_waypoints, avoid_area, prefer_path_type
+from utils import add_waypoints, avoid_area, prefer_path_type, update_changes_file, init_changes_file
 from chains import choose_func, split_changes
-
 
 app = Flask(__name__)
 
@@ -33,21 +32,37 @@ llm = LlamaCpp(
 @app.route('/', methods=["POST","GET"])
 def index():
     if request.method == "POST":
-        todo = request.form.get("todo")
-        changes = split_changes(todo, llm)
-        functions = []
-        parameters = []
-        for change in changes:
-            if len(change) > 0:
-                function, parameter = choose_func(change, llm)
-                functions.append(function)
-                parameters.append(parameter)
-                possibles = globals().copy()
-                possibles.update(locals())
-                method = possibles.get(function)
-                if not method:
-                    raise NotImplementedError("Method %s not implemented" % function)
-                print(method(parameter))
+        if 'clear' in request.form:
+            init_changes_file(session)
+        else:
+            # with open("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/in_progress.txt", "w") as file:
+            #     file.write("working...")
+            todo = request.form.get("todo")
+            changes = split_changes(todo, llm)
+            functions = []
+            parameters = []
+            for change in changes:
+                if len(change) > 0:
+                    function, parameter = choose_func(change, llm)
+                    functions.append(function)
+                    parameters.append(parameter)
+                    possibles = globals().copy()
+                    possibles.update(locals())
+                    method = possibles.get(function)
+                    if not method:
+                        raise NotImplementedError("Method %s not implemented" % function)
+                    method(parameter, session)
+            # os.remove("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/in_progress.txt")
+            # with open("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/done.txt", "w") as file:
+            #     file.write("done")
+            update_changes_file(session)
+            # os.remove("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/done.txt")
+    else:
+        init_changes_file(session)
         
     return render_template('index.html', 
                             google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")
+
+if __name__ == "__main__":
+   app.secret_key = os.environ["SESSION_KEY"]
+   app.run(port=5001)

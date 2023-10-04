@@ -1,7 +1,7 @@
 var map;
-
 var marker; 
 
+var directionsService = new google.maps.DirectionsService();
 var renderers = [];
 
 function geocodeLatLng(geocoder, latlng) {
@@ -28,8 +28,6 @@ async function initMap(lat, lon) {
     center: myLatLng,
     zoom: 15,
   });
-
-  var directionsService = new google.maps.DirectionsService();
 
   marker = new google.maps.Marker({
     position: myLatLng,
@@ -68,8 +66,57 @@ async function initMap(lat, lon) {
     bounds: defaultBounds
   });
 
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
+  $(document).on('submit','#todo-form',function(e) {
+    e.preventDefault();
+    $.ajax({
+      type:'POST',
+      url:'/',
+      data:{
+        todo:$("#todo").val()
+      },
+    });
+    // fetch('/static/js/in_progress.txt')
+    // .then(async response => {
+    //   fetch('/static/js/done.txt')
+    //   .then(async response => {
+
+    const wait_for_write = async () => {
+      await delay(2000);
+      calcRoute();
+    };
+
+    wait_for_write();
+      // });
+    // });
+  });
+
+  $(document).on('submit','#clear-button',function(e) {
+    e.preventDefault();
+    $.ajax({
+      type:'POST',
+      url:'/',
+      data:{
+        clear: 1
+      },
+    });
+    const wait_for_write = async () => {
+      await delay(500);
+      calcRoute();
+    };
+    wait_for_write();
+    $("#todo").val("");
+    // fetch('/static/js/in_progress.txt')
+    // .then(async response => {
+    //   fetch('/static/js/done.txt')
+    //   .then(async response => {
+      // });
+    // });
+  });
+
   google.maps.event.addListener(end_box, 'places_changed', function(){
-    calcRoute(directionsService);
+    calcRoute();
     // var places = end_box.getPlaces();
     // var bounds = new google.maps.LatLngBounds();
     // var i, place;
@@ -93,44 +140,52 @@ async function initMap(lat, lon) {
 
 }
 
-function calcRoute(directionsService) {
-  for (var j = 0; j < renderers.length; j++) {
-    renderers[j].set('directions', null);
-  }
-  renderers = [];
-  var start = document.getElementById('start').value;
-  var end = document.getElementById('end').value;
-  var request = {
-    origin: start,
-    destination: end,
-    provideRouteAlternatives: true,
-    travelMode: 'BICYCLING',
-    // waypoints: [
-    //   {
-    //     location: 'Joplin, MO',
-    //     stopover: false
-    //   },{
-    //     location: 'Oklahoma City, OK',
-    //     stopover: true
-    //   }],
-  };
-  directionsService.route(request, function(result, status) {
-    if (status == 'OK') {
-      let routes = result["routes"]
-      for (var i=0; i < routes.length; i++) {
-        if (i == 0) {
-          var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true});
-        } else{
-          var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true,});
-          directionsRenderer.setOptions({polylineOptions: {strokeColor: '#808080', strokeOpacity: 1}}); 
-          //polylineOptions: {strokeColor: '#808080', strokeOpacity: 0.5}});
-        }
-        directionsRenderer.setMap(map);
-        directionsRenderer.setRouteIndex(i);
-        directionsRenderer.setDirections(result);
-        renderers.push(directionsRenderer)
-      }
+function calcRoute() {
+  fetch('/static/js/changes.json')
+  .then(response => response.json())
+  .then(jsonResponse => {
+    var waypoints;
+    if (jsonResponse != null) {
+      waypoints = jsonResponse.waypoints
     }
+    for (var j = 0; j < renderers.length; j++) {
+      renderers[j].set('directions', null);
+    }
+    renderers = [];
+    var start = document.getElementById('start').value;
+    var end = document.getElementById('end').value;
+    var request = {
+      origin: start,
+      destination: end,
+      provideRouteAlternatives: true,
+      travelMode: 'BICYCLING',
+      waypoints: waypoints,
+      optimizeWaypoints: waypoints != null,
+      // waypoints: [
+      //   {
+      //     location: 'Joplin, MO',
+      //     stopover: false
+      //   },{
+      //     location: 'Oklahoma City, OK',
+      //     stopover: true
+      //   }],
+    };
+    directionsService.route(request, function(result, status) {
+      if (status == 'OK') {
+        let routes = result["routes"]
+        for (var i=0; i < routes.length; i++) {
+          if (i == 0) {
+            var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true});
+          } else{
+            var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true,});
+            directionsRenderer.setOptions({polylineOptions: {strokeColor: '#808080', strokeOpacity: 1}}); 
+          }
+          directionsRenderer.setMap(map);
+          directionsRenderer.setRouteIndex(i);
+          directionsRenderer.setDirections(result);
+          renderers.push(directionsRenderer)
+        }
+      }});
   });
 }
 
