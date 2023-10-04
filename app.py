@@ -35,8 +35,6 @@ def index():
         if 'clear' in request.form:
             init_changes_file(session)
         else:
-            # with open("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/in_progress.txt", "w") as file:
-            #     file.write("working...")
             todo = request.form.get("todo")
             changes = split_changes(todo, llm)
             functions = []
@@ -52,11 +50,7 @@ def index():
                     if not method:
                         raise NotImplementedError("Method %s not implemented" % function)
                     method(parameter, session)
-            # os.remove("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/in_progress.txt")
-            # with open("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/done.txt", "w") as file:
-            #     file.write("done")
             update_changes_file(session)
-            # os.remove("/Users/ng/Documents/2023 Fall/Capstone/project/static/js/done.txt")
     else:
         init_changes_file(session)
         
