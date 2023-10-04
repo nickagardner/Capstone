@@ -5,9 +5,11 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request
 
-from utils import add_waypoints, avoid_area, prefer_path_type, update_changes_file, init_changes_file
+from utils import (add_waypoints, avoid_area, 
+                   prefer_path_type, update_changes_file, 
+                   init_changes_file, get_changes_dict)
 from chains import choose_func, split_changes
 
 app = Flask(__name__)
@@ -33,8 +35,9 @@ llm = LlamaCpp(
 def index():
     if request.method == "POST":
         if 'clear' in request.form:
-            init_changes_file(session)
+            init_changes_file()
         else:
+            change_dict = get_changes_dict()
             todo = request.form.get("todo")
             changes = split_changes(todo, llm)
             functions = []
@@ -49,10 +52,10 @@ def index():
                     method = possibles.get(function)
                     if not method:
                         raise NotImplementedError("Method %s not implemented" % function)
-                    method(parameter, session)
-            update_changes_file(session)
+                    method(parameter, change_dict)
+            update_changes_file(change_dict)
     else:
-        init_changes_file(session)
+        init_changes_file()
         
     return render_template('index.html', 
                             google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")

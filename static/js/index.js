@@ -1,5 +1,6 @@
 var map;
 var marker; 
+var end_marker;
 
 var directionsService = new google.maps.DirectionsService();
 var renderers = [];
@@ -32,7 +33,7 @@ async function initMap(lat, lon) {
   marker = new google.maps.Marker({
     position: myLatLng,
     map,
-    title: "Hello World!",
+    title: "Start",
   });
 
   var defaultBounds = new google.maps.LatLngBounds(
@@ -52,7 +53,7 @@ async function initMap(lat, lon) {
     var i, place;
 
     for(var i=0; place=places[i];i++){
-        bounds.extends(place.geometry.location);
+        bounds.extend(place.geometry.location);
         marker.setPosition(place.geometry.location);
     }
 
@@ -96,27 +97,32 @@ async function initMap(lat, lon) {
   });
 
   google.maps.event.addListener(end_box, 'places_changed', function(){
+    var places = end_box.getPlaces();
+    var bounds = new google.maps.LatLngBounds();
+    var i, place;
+
+    end_marker = new google.maps.Marker({
+      map,
+      title: "Destination",
+    });
+
+    for(i=0; place=places[i];i++){
+        bounds.extend(place.geometry.location);
+        end_marker.setPosition(place.geometry.location);
+    }
+
+    map.fitBounds(bounds);
+    map.setZoom(15);
     calcRoute();
-    // var places = end_box.getPlaces();
-    // var bounds = new google.maps.LatLngBounds();
-    // var i, place;
-
-    // for(i=0; place=places[i];i++){
-    //     bounds.extends(place.geometry.location);
-    //     marker.setPosition(place.geometry.location);
-    // }
-
-    // map.fitBounds(bounds);
-    // map.setZoom(15);
   });
 
-  google.maps.event.addListener(marker, 'position_changed', function(){
-      var lat = marker.getPosition().lat();
-      var lng = marker.getPosition().lng();
+  // google.maps.event.addListener(marker, 'position_changed', function(){
+  //     var lat = marker.getPosition().lat();
+  //     var lng = marker.getPosition().lng();
 
-      $('#lat').val(lat);
-      $('#lng').val(lng);
-  });
+  //     $('#lat').val(lat);
+  //     $('#lng').val(lng);
+  // });
 
 }
 
@@ -140,7 +146,7 @@ function calcRoute() {
       provideRouteAlternatives: true,
       travelMode: 'BICYCLING',
       waypoints: waypoints,
-      optimizeWaypoints: waypoints != null,
+      optimizeWaypoints: true,
       // waypoints: [
       //   {
       //     location: 'Joplin, MO',
