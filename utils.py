@@ -9,8 +9,7 @@ def avoid_area(obstacle, change_dict):
 
 def add_waypoints(waypoint, change_dict):
     """Run if the user wants to route through additional locations."""
-    dict_item = {"location": waypoint, "stopover": True}
-    change_dict["waypoints"].append(dict_item)
+    change_dict["waypoints"].append(waypoint)
     print(f"Waypoint added: {waypoint}")
 
 
@@ -29,5 +28,5 @@ def update_changes_file(change_dict):
         json.dump(change_dict, file)
 
 def init_changes_file():
-    change_dict = {"waypoints": [], "avoid": [], "path_type": ""}
+    change_dict = {"waypoints": [], "avoid": [], "path_type": "", "api_key": os.environ["GEOAPIFY_KEY"]}
     update_changes_file(change_dict)

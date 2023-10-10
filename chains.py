@@ -56,6 +56,8 @@ def choose_func(text, llm):
     )
     result = chain.run(text)
 
+    result = result + "\n"
+
     print(result)
 
     pattern = ".*Assistant:.*\n"
@@ -66,7 +68,7 @@ def choose_func(text, llm):
     function = components[0].strip()
     parameters = []
     for parameter in components[1:]:
-        parameters.append(parameter.strip("\"\',.`\n"))
+        parameters.append(parameter.strip("\"\',.`\n "))
 
     return function, parameters
 

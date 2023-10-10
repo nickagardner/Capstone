@@ -62,5 +62,4 @@ def index():
                             google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")
 
 if __name__ == "__main__":
-   app.secret_key = os.environ["SESSION_KEY"]
    app.run(port=5001)
