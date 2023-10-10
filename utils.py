@@ -3,7 +3,8 @@ import os
 
 def avoid_area(obstacle, change_dict):
     """Run with anything that the user asks to avoid."""
-    return f"Need to avoid: {obstacle}"
+    change_dict["avoid"].append(obstacle)
+    print(f"Avoid added: {obstacle}")
 
 
 def add_waypoints(waypoint, change_dict):
@@ -15,7 +16,8 @@ def add_waypoints(waypoint, change_dict):
 
 def prefer_path_type(type, change_dict):
     """Run if the user specifies a particular path type they would prefer."""
-    return f"Preferred path type: {type}"
+    change_dict["path_type"].append(type)
+    print(f"Path type added: {type}")
 
 def get_changes_dict():
     with open(os.path.join(os.path.abspath(os.curdir), "project", "static/js/changes.json"), "r") as file:

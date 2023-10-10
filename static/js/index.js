@@ -30,6 +30,9 @@ async function initMap(lat, lon) {
     zoom: 15,
   });
 
+  const bikeLayer = new google.maps.BicyclingLayer()
+  bikeLayer.setMap(map);
+
   marker = new google.maps.Marker({
     position: myLatLng,
     map,
@@ -131,8 +134,12 @@ function calcRoute() {
   .then(response => response.json())
   .then(jsonResponse => {
     var waypoints;
+    var avoid;
+    var path_types;
     if (jsonResponse != null) {
       waypoints = jsonResponse.waypoints
+      avoid = jsonResponse.avoid
+      path_types = jsonResponse.path_types
     }
     for (var j = 0; j < renderers.length; j++) {
       renderers[j].set('directions', null);
@@ -158,6 +165,7 @@ function calcRoute() {
     };
     directionsService.route(request, function(result, status) {
       if (status == 'OK') {
+        console.log(result)
         let routes = result["routes"]
         for (var i=0; i < routes.length; i++) {
           if (i == 0) {

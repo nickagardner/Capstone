@@ -24,7 +24,7 @@ llm = LlamaCpp(
     n_gpu_layers=n_gpu_layers,
     n_batch=n_batch,
     temperature=0,
-    max_tokens=20,
+    max_tokens=40,
     n_ctx=2048,
     top_p=1,
     f16_kv=True,  # MUST set to True, otherwise you will run into problem after a couple of calls
@@ -44,15 +44,16 @@ def index():
             parameters = []
             for change in changes:
                 if len(change) > 0:
-                    function, parameter = choose_func(change, llm)
-                    functions.append(function)
-                    parameters.append(parameter)
-                    possibles = globals().copy()
-                    possibles.update(locals())
-                    method = possibles.get(function)
-                    if not method:
-                        raise NotImplementedError("Method %s not implemented" % function)
-                    method(parameter, change_dict)
+                    function, new_parameters = choose_func(change, llm)
+                    for param in new_parameters:
+                        functions.append(function)
+                        parameters.append(param)
+                        possibles = globals().copy()
+                        possibles.update(locals())
+                        method = possibles.get(function)
+                        if not method:
+                            raise NotImplementedError("Method %s not implemented" % function)
+                        method(param, change_dict)
             update_changes_file(change_dict)
     else:
         init_changes_file()
