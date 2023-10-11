@@ -176,7 +176,7 @@ async function calcRoute() {
   var more_waypoints = "";
   var avoid;
   var avoid_str = "";
-  var path_types;
+  var path_type;
   var api_key;
   var coords;
   var coord_array = [];
@@ -191,14 +191,9 @@ async function calcRoute() {
         dist_array.push(distance(coords, end_coords))
       };
 
-      console.log(coord_array)
-      console.log(dist_array)
-
       coord_array.sort(function(a, b){  
         return dist_array[coord_array.indexOf(b)] - dist_array[coord_array.indexOf(a)];
       });
-
-      console.log(coord_array)
 
       for (var i=0; i < coord_array.length; i++) {
         more_waypoints += coord_array[i].join(",");
@@ -208,10 +203,10 @@ async function calcRoute() {
 
     avoid = jsonResponse.avoid;
     if (avoid.length > 0) {
-      avoid_str = "avoid=location:";
+      avoid_str = "avoid=";
       for (var i=0; i < avoid.length; i++) {
         coords = await codeAddress(avoid[i]);
-        avoid_str += coords.join(",");
+        avoid_str = avoid_str + "location:" + coords.join(",");
         if (i < avoid.length - 1) {
           avoid_str += "|"
         }
@@ -219,7 +214,10 @@ async function calcRoute() {
       avoid_str += "&"
     }
 
-    path_types = jsonResponse.path_types;
+    path_type = jsonResponse.path_type;
+    if (path_type == "") {
+      path_type = "bicycle";
+    }
     api_key = jsonResponse.api_key;
   }
   // for (var j = 0; j < renderers.length; j++) {
@@ -244,7 +242,7 @@ async function calcRoute() {
   //   //     stopover: true
   //   //   }],
   // };
-  const url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=bicycle&${avoid_str}details=route_details&apiKey=${api_key}`;
+  const url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
   console.log(url)
 
   map.data.forEach(function(feature) {

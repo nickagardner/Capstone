@@ -15,7 +15,12 @@ def add_waypoints(waypoint, change_dict):
 
 def prefer_path_type(type, change_dict):
     """Run if the user specifies a particular path type they would prefer."""
-    change_dict["path_type"].append(type)
+    if "trails" in type:
+        change_dict["path_type"] = "mountain_bike"
+    elif "roads" in type:
+        change_dict["path_type"] = "road_bike"
+    elif "city" in type:
+        change_dict["path_type"] = "bicycle"
     print(f"Path type added: {type}")
 
 def get_changes_dict():

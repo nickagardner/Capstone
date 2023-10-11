@@ -35,14 +35,14 @@ def choose_func(text, llm):
     User: avoid main street
     Assistant: avoid_area | main street
 
-    User: route through north cemetery and Susan B. Anthony Museum & House
-    Assistant: add_waypoints | north cemetery | Susan B. Anthony Museum & House
+    User: route through north ave and Susan B. Anthony Museum & House
+    Assistant: add_waypoints | north ave | Susan B. Anthony Museum & House
 
     User: avoid johnson bridge and 17 Madison St
     Assistant: avoid_area | johnson bridge | 17 Madison St
 
-    User: want to ride on gravel and bike lanes only
-    Asssistant: prefer_path_type | gravel | bike lanes
+    User: I want to ride on roads
+    Asssistant: prefer_path_type | roads
     
     User: """
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
