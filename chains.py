@@ -45,6 +45,7 @@ def choose_func(text, llm):
     Asssistant: prefer_path_type | roads
     
     User: """
+
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
     human_template = "{text}"
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
@@ -54,11 +55,10 @@ def choose_func(text, llm):
         llm=llm,
         prompt=chat_prompt,
     )
+
     result = chain.run(text)
-
-    result = result + "\n"
-
     print(result)
+    result = result + "\n"
 
     pattern = ".*Assistant:.*\n"
     match = re.search(pattern, result)[0]
@@ -73,33 +73,51 @@ def choose_func(text, llm):
     return function, parameters
 
 def split_changes(text, llm):
-    # template = """You are a helpful assistant who parses text and splits it into discrete requests. 
-    # A user will pass in one or more sentences containing change requests, which you should split into each 
-    # requested change and return as a comma separated list. Return ONLY a comma separated list and nothing more. 
-    # Do not add any characters that the user did not include in their request. 
+    template = """You are a helpful assistant who parses text and splits the text into discrete requests.
+    Return ONLY the response to the last user response and nothing more.
     
-    # For instance, if the user inputs: `prefer trails. avoid central park`, you should output: [`prefer trails`, `avoid central park`]. 
-    # If the user inputs: `avoid main street and prefer gravel paths`, you should output: [`avoid main street`, `prefer gravel paths`]"""
+    User: I want to ride on trails and avoid main street
+    Assistant: I want to ride on trails | avoid main street
 
-    # system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-    # human_template = "{text}"
-    # human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    User: stop at boston common and the empire state building
+    Assistant: stop at boston common and the empire state building
+
+    User: avoid 42nd ave
+    Assistant: avoid 42nd ave
+
+    User: prefer roads. route through north ave and Susan B. Anthony Museum & House
+    Assistant: prefer roads | route through north ave and Susan B. Anthony Museum & House
+
+    User: avoid johnson bridge and 17 Madison St
+    Assistant: avoid johnson bridge and 17 Madison St
+
+    User: pass through the airport. use city streets
+    Asssistant: pass through the airport | use city streets
     
-    # chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
-    # chain = LLMChain(
-    #     llm=llm,
-    #     prompt=chat_prompt,
-    #     output_parser=CommaSeparatedListOutputParser()
-    # )
-    # result = chain.run(text)
+    User: """
 
-    # pattern = ".*Assistant:.*\)"
-    # match = re.search(pattern, result)[0]
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+    human_template = "{text}"
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+    chain = LLMChain(
+        llm=llm,
+        prompt=chat_prompt,
+        output_parser=CommaSeparatedListOutputParser()
+    )
+    result = chain.run(text)[0]
+    result = result + "\n"
 
-    # content = match.split("Assistant:")[-1]
-    # function = content.split("(")[0]
-    # parameter = " ".join(content.split("(")[-1].split(")")[0].split("_")).strip("\"\',.`")
+    print(result)
 
-    result = text.split(".")
+    pattern = ".*Assistant:.*\n"
+    match = re.search(pattern, result)[0]
 
-    return result
+    content = match.split("Assistant:")[-1]
+    components = content.split("|")
+    requests = []
+    for parameter in components:
+        requests.append(parameter.strip("\"\',.`\n "))
+
+    return requests

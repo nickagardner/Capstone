@@ -1,12 +1,11 @@
 var map;
 var marker; 
 var end_marker;
-// var mouse_marker;
 
 var directionsService = new google.maps.DirectionsService();
 var bounds = new google.maps.LatLngBounds();
 var geocoder;
-// var renderers = [];
+var recognition;
 
 function geocodeLatLng(latlng) {
   geocoder
@@ -28,20 +27,41 @@ function codeAddress(address) {
         const coords = results[0].geometry.location;
         resolve([coords.lat(), coords.lng()]);
       } else {
-        reject(status);
+        resolve(null);
       }
     });
 });
-}
+};
 
-// async function codeAddress(address, api_key) {
-//   let url = `https://api.geoapify.com/v1/geocode/search?text=${address}&apiKey=${api_key}`
-//   return await fetch(url).then(res => res.json());
-// };
+$("#transcribe").click(function () {
+  // recognition.lang = select_dialect.value;
+  recognition.start();
+});
 
 async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
   const myLatLng = { lat: lat, lng: lon };
+  recognition = new webkitSpeechRecognition();
+
+  recognition.onresult = function(event) {
+    var final_transcript = '';
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      }
+    }
+    $("#todo").val(final_transcript);
+    $.ajax({
+      type:'POST',
+      url:'/',
+      data:{
+        todo:$("#todo").val()
+      },
+      success: function(data) {
+        calcRoute()
+      }
+    });
+  };
 
   geocoder = new google.maps.Geocoder();
   geocodeLatLng(myLatLng)
@@ -64,11 +84,6 @@ async function initMap(lat, lon) {
     map,
     title: "Destination",
   });
-
-  // mouse_marker = new google.maps.Marker({
-  //   map,
-  //   title: "Mouse",
-  // });
 
   bounds.extend(myLatLng);
 
@@ -114,13 +129,7 @@ async function initMap(lat, lon) {
     map.panToBounds(bounds);
     calcRoute();
   });
-
-  // google.maps.event.addListener(map, 'mousemove', function (event) {
-  //   document.getElementById('lat').innerHTML = event.latLng.lat().toFixed(3) 
-  //   document.getElementById('lng').innerHTML = event.latLng.lng().toFixed(3)
-  //   // do something with event.latLng
-  // });
-
+  
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
     $.ajax({
@@ -149,15 +158,6 @@ async function initMap(lat, lon) {
     });
     $("#todo").val("");
   });
-
-  // google.maps.event.addListener(marker, 'position_changed', function(){
-  //     var lat = marker.getPosition().lat();
-  //     var lng = marker.getPosition().lng();
-
-  //     $('#lat').val(lat);
-  //     $('#lng').val(lng);
-  // });
-
 }
 
 function distance(waypoint_coords, end_coords) {
@@ -186,9 +186,13 @@ async function calcRoute() {
 
     if (waypoints.length > 0) {
       for (var i=0; i < waypoints.length; i++) {
-        coords = await codeAddress(waypoints[i])
-        coord_array.push(coords);
-        dist_array.push(distance(coords, end_coords))
+        coords = await codeAddress(waypoints[i]);
+        if (coords != null) {
+          coord_array.push(coords);
+          dist_array.push(distance(coords, end_coords));
+        } else {
+          console.log("Unable to geocode waypoint: " + waypoints[i])
+        }
       };
 
       coord_array.sort(function(a, b){  
@@ -197,7 +201,7 @@ async function calcRoute() {
 
       for (var i=0; i < coord_array.length; i++) {
         more_waypoints += coord_array[i].join(",");
-        more_waypoints += "|"
+        more_waypoints += "|";
       };
     };
 
@@ -208,10 +212,10 @@ async function calcRoute() {
         coords = await codeAddress(avoid[i]);
         avoid_str = avoid_str + "location:" + coords.join(",");
         if (i < avoid.length - 1) {
-          avoid_str += "|"
+          avoid_str += "|";
         }
       };
-      avoid_str += "&"
+      avoid_str += "&";
     }
 
     path_type = jsonResponse.path_type;
@@ -220,28 +224,7 @@ async function calcRoute() {
     }
     api_key = jsonResponse.api_key;
   }
-  // for (var j = 0; j < renderers.length; j++) {
-  //   renderers[j].set('directions', null);
-  // }
 
-  // renderers = [];
-  // end_coords = end_coords.features[0].geometry.coordinates.reverse();
-  // var request = {
-  //   origin: start,
-  //   destination: end,
-  //   provideRouteAlternatives: true,
-  //   travelMode: 'BICYCLING',
-  //   waypoints: waypoints,
-  //   optimizeWaypoints: true,
-  //   // waypoints: [
-  //   //   {
-  //   //     location: 'Joplin, MO',
-  //   //     stopover: false
-  //   //   },{
-  //   //     location: 'Oklahoma City, OK',
-  //   //     stopover: true
-  //   //   }],
-  // };
   const url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
   console.log(url)
 
@@ -252,24 +235,6 @@ async function calcRoute() {
   fetch(url).then(res => res.json()).then(result => {
       map.data.addGeoJson(result);
   }, error => console.log(err));
-
-    // directionsService.route(request, function(result, status) {
-    //   if (status == 'OK') {
-    //     console.log(result)
-    //     let routes = result["routes"]
-    //     for (var i=0; i < routes.length; i++) {
-    //       if (i == 0) {
-    //         var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true});
-    //       } else{
-    //         var directionsRenderer = new google.maps.DirectionsRenderer({suppressMarkers: true,});
-    //         directionsRenderer.setOptions({polylineOptions: {strokeColor: '#808080', strokeOpacity: 1}}); 
-    //       }
-    //       directionsRenderer.setMap(map);
-    //       directionsRenderer.setRouteIndex(i);
-    //       directionsRenderer.setDirections(result);
-    //       renderers.push(directionsRenderer)
-    //     }
-    //   }});;
 };
 
 if ("geolocation" in navigator) {
