@@ -39,27 +39,50 @@ def index():
         else:
             change_dict = get_changes_dict()
             todo = request.form.get("todo")
-            changes = split_changes(todo, llm)
-            functions = []
-            parameters = []
-            for change in changes:
-                if len(change) > 0:
-                    function, new_parameters = choose_func(change, llm)
-                    for param in new_parameters:
-                        functions.append(function)
-                        parameters.append(param)
-                        possibles = globals().copy()
-                        possibles.update(locals())
-                        method = possibles.get(function)
-                        if not method:
-                            raise NotImplementedError("Method %s not implemented" % function)
-                        method(param, change_dict)
+            todo_sections = todo.split(".")
+            for section in todo_sections:
+                changes = split_changes(section, llm)
+                functions = []
+                parameters = []
+                for change in changes:
+                    if len(change) > 0:
+                        function, new_parameters = choose_func(change, llm)
+                        for param in new_parameters:
+                            functions.append(function)
+                            parameters.append(param)
+                            possibles = globals().copy()
+                            possibles.update(locals())
+                            method = possibles.get(function)
+                            if not method:
+                                raise NotImplementedError("Method %s not implemented" % function)
+                            method(param, change_dict)
             update_changes_file(change_dict)
     else:
         init_changes_file()
         
     return render_template('index.html', 
                             google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")
+
+@app.route('/clean', methods=["POST"])
+def clean():
+    json = request.get_json()[0]
+    bad_waypoint_inds = json["bad_waypoint_inds"]
+    bad_avoid_inds = json["bad_avoid_inds"]
+
+    change_dict = get_changes_dict()
+
+    if bad_waypoint_inds is not None:
+        for i in sorted(bad_waypoint_inds, reverse=True):
+            del change_dict["waypoints"][i]
+
+    if bad_avoid_inds is not None:
+        for i in sorted(bad_avoid_inds, reverse=True):
+            del change_dict["avoid"][i]
+
+    update_changes_file(change_dict)
+
+    return ('', 204)
+
 
 if __name__ == "__main__":
    app.run(port=5001)

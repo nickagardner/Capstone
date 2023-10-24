@@ -172,6 +172,9 @@ async function calcRoute() {
   var end = document.getElementById('end').value;
   var end_coords = await codeAddress(end);
 
+  var bad_waypoint_inds = [];
+  var bad_avoid_inds = [];
+
   var waypoints;
   var more_waypoints = "";
   var avoid;
@@ -191,6 +194,7 @@ async function calcRoute() {
           coord_array.push(coords);
           dist_array.push(distance(coords, end_coords));
         } else {
+          bad_waypoint_inds.push(i);
           console.log("Unable to geocode waypoint: " + waypoints[i])
         }
       };
@@ -206,16 +210,25 @@ async function calcRoute() {
     };
 
     avoid = jsonResponse.avoid;
+    var avoid_success = 0;
     if (avoid.length > 0) {
-      avoid_str = "avoid=";
+      avoid_str = "";
       for (var i=0; i < avoid.length; i++) {
         coords = await codeAddress(avoid[i]);
-        avoid_str = avoid_str + "location:" + coords.join(",");
-        if (i < avoid.length - 1) {
-          avoid_str += "|";
-        }
+        if (coords != null) {
+          avoid_str = avoid_str + "location:" + coords.join(",");
+          if (i < avoid.length - 1) {
+            avoid_str += "|";
+          };
+          avoid_success += 1;
+        } else {
+          bad_avoid_inds.push(i);
+          console.log("Unable to geoscode avoid: " + avoid[i])
+        };
       };
-      avoid_str += "&";
+      if (avoid_success > 0) {
+        avoid_str = "avoid=" + avoid_str + "&";
+      }
     }
 
     path_type = jsonResponse.path_type;
@@ -223,6 +236,17 @@ async function calcRoute() {
       path_type = "bicycle";
     }
     api_key = jsonResponse.api_key;
+
+    console.log(bad_avoid_inds)
+    console.log(bad_waypoint_inds)
+
+    $.ajax({
+      type:'POST',
+      url:'/clean',
+      contentType:'application/json',
+      dataType : 'json',
+      data: JSON.stringify([{bad_waypoint_inds, bad_avoid_inds}]),
+    });
   }
 
   const url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
