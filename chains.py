@@ -96,20 +96,23 @@ def split_changes(text, llm):
     User: pass through the airport and use city streets
     Asssistant: pass through the airport | use city streets
 
-    User: don't go on fipson dr and preferred trails
-    Assistant: don't go on fipson dr | preferred trails
-
     User: Avoid the downtown area and stop at the park and the museum.
     Assistant: Avoid the downtown area | stop at the park and the museum.
 
     User: stop at the park
     Assistant: stop at the park
 
-    User: Stay away from the noisy downtown streets, stop at the coffee shop and the library.
-    Assistant: Stay away from the noisy downtown streets | stop at the coffee shop and the library.
+    User: Stay away from the noisy downtown street, stop at the coffee shop and the library.
+    Assistant: Stay away from the noisy downtown street | stop at the coffee shop and the library.
 
     User: I want to ride on roads
     Asssistant: I want to ride on roads
+
+    User: don't go on fipson dr and preferred trails
+    Assistant: don't go on fipson dr | preferred trails
+
+    User: skip welter ave
+    Assistant: skip welter ave
     
     User: """
 

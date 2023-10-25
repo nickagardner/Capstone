@@ -6,6 +6,11 @@ var directionsService;
 var bounds;
 var geocoder;
 var recognition;
+var avoid_str = "";
+var avoided_already = [];
+var avoided_locs = [];
+
+var conversion_dict = {"rd": "road", "st": "street", "dr": "drive", "ave": "avenue", "blvd": "boulevard", "ln": "lane", "pkwy": "parkway", "pl": "place", "ct": "court", "cir": "circle", "trl": "trail", "hwy": "highway"};
 
 function geocodeLatLng(latlng) {
   geocoder
@@ -160,8 +165,34 @@ async function initMap(lat, lon) {
       }
     });
     $("#todo").val("");
+    avoid_str = "";
+    avoided_already = [];
   });
 }
+
+function check_route(intermediate_result, avoid) {
+  for (var k=0; k < intermediate_result.features[0].properties.legs.length; k++) {
+    for (var j=0; j < intermediate_result.features[0].properties.legs[k].steps.length; j++) {
+      let name = intermediate_result.features[0].properties.legs[0].steps[j]["name"]
+      if (name != null) {
+        name = name.toLowerCase();
+        let avoid_name = avoid.toLowerCase();
+        let avoid_arr = avoid_name.split(" ");
+        for (var l=0; l < avoid_arr.length; l++) {
+          if (avoid_arr[l] in conversion_dict) {
+            avoid_arr[l] = conversion_dict[avoid_arr[l]];
+          };
+        };
+        avoid_name = avoid_arr.join(" ");
+        if (name.includes(avoid_name)) {
+          let coords = intermediate_result.features[0].geometry.coordinates[0][intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]].reverse();
+          return coords;
+        };
+      };
+    };
+  };
+  return null;
+};
 
 function distance(waypoint_coords, end_coords) {
   return ((end_coords[0] - waypoint_coords[0])**2 + (end_coords[1] - waypoint_coords[1])**2)**0.5
@@ -182,7 +213,6 @@ async function calcRoute() {
   var waypoints;
   var more_waypoints = "";
   var avoid;
-  var avoid_str = "";
   var path_type;
   var coords;
   var coord_array = [];
@@ -227,37 +257,33 @@ async function calcRoute() {
 
     avoid = jsonResponse.avoid;
 
-    var avoid_arr = [];
     if (avoid.length > 0) {
-      url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&details=route_details&apiKey=${api_key}`
+      url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`
       intermediate_result = await fetch(url).then(res => res.json());
 
       for (var i=0; i < avoid.length; i++) {
-        coords = await codeAddress(avoid[i]);
-        if (coords != null) {
-          avoid_arr.push(coords);
-        } else {
-          var found_match = false;
-          for (var j=0; j < intermediate_result.features[0].properties.legs[0].steps.length; j++) {
-            let name = intermediate_result.features[0].properties.legs[0].steps[j]["name"]
-            if (name != null && name.includes(avoid[i])) {
-              coords = intermediate_result.features[0].geometry.coordinates[0][intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]].reverse();
-              avoid_arr.push(coords);
-              found_match = true;
-              break;
-              };
-          };
-          if (!found_match) {
-            bad_avoid_inds.push(i);
-            console.log("Unable to geocode avoid: " + avoid[i])
+        if (!(avoid[i] in avoided_already)) {
+          coords = check_route(intermediate_result, avoid[i]);
+          if (coords == null) {
+            let new_coords = await codeAddress(avoid[i]);
+            if (new_coords != null) {
+              avoided_already.push(avoid[i]);
+              avoided_locs.push(new_coords);
+            } else {
+              bad_avoid_inds.push(i);
+              console.log("Unable to geocode avoid: " + avoid[i])
+            }
+          } else {
+            avoided_already.push(avoid[i]);
+            avoided_locs.push(coords);
           };
         };
       };
-      if (avoid_arr.length > 0) {
+      if (avoided_locs.length > 0) {
         avoid_str = "avoid=";
-        for (var i=0; i < avoid_arr.length; i++) {
-          avoid_str = avoid_str + "location:" + avoid_arr[i].join(",");
-          if (i < avoid_arr.length - 1) {
+        for (var i=0; i < avoided_locs.length; i++) {
+          avoid_str = avoid_str + "location:" + avoided_locs[i].join(",");
+          if (i < avoided_locs.length - 1) {
             avoid_str += "|";
           };
         };
