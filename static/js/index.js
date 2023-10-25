@@ -2,8 +2,8 @@ var map;
 var marker; 
 var end_marker;
 
-var directionsService = new google.maps.DirectionsService();
-var bounds = new google.maps.LatLngBounds();
+var directionsService;
+var bounds;
 var geocoder;
 var recognition;
 
@@ -22,7 +22,7 @@ function geocodeLatLng(latlng) {
 
 function codeAddress(address) {
   return new Promise((resolve, reject) => {
-    geocoder.geocode( { 'address': address}, function(results, status) {
+    geocoder.geocode( { 'address': address, 'bounds': bounds}, function(results, status) {
       if (status == 'OK') {
         const coords = results[0].geometry.location;
         resolve([coords.lat(), coords.lng()]);
@@ -41,6 +41,9 @@ $("#transcribe").click(function () {
 async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
   const myLatLng = { lat: lat, lng: lon };
+  bounds = new google.maps.LatLngBounds();
+  directionsService = new google.maps.DirectionsService();
+
   recognition = new webkitSpeechRecognition();
 
   recognition.onresult = function(event) {
@@ -166,6 +169,7 @@ function distance(waypoint_coords, end_coords) {
 
 async function calcRoute() {
   const jsonResponse = await fetch('/static/js/changes.json').then(response => response.json());
+  var api_key = jsonResponse.api_key;
 
   var start = document.getElementById('start').value;
   var start_coords = await codeAddress(start);
@@ -180,10 +184,11 @@ async function calcRoute() {
   var avoid;
   var avoid_str = "";
   var path_type;
-  var api_key;
   var coords;
   var coord_array = [];
   var dist_array = [];
+  var url;
+  var intermediate_result; 
   if (jsonResponse != null) {
     waypoints = jsonResponse.waypoints;
 
@@ -191,8 +196,14 @@ async function calcRoute() {
       for (var i=0; i < waypoints.length; i++) {
         coords = await codeAddress(waypoints[i]);
         if (coords != null) {
-          coord_array.push(coords);
-          dist_array.push(distance(coords, end_coords));
+          let dist = distance(coords, end_coords)
+          if (dist < 1) {
+            coord_array.push(coords);
+            dist_array.push(dist);
+          } else {
+            bad_waypoint_inds.push(i);
+            console.log("Waypoint too far from destination: " + waypoints[i])
+          }
         } else {
           bad_waypoint_inds.push(i);
           console.log("Unable to geocode waypoint: " + waypoints[i])
@@ -209,36 +220,50 @@ async function calcRoute() {
       };
     };
 
-    avoid = jsonResponse.avoid;
-    var avoid_success = 0;
-    if (avoid.length > 0) {
-      avoid_str = "";
-      for (var i=0; i < avoid.length; i++) {
-        coords = await codeAddress(avoid[i]);
-        if (coords != null) {
-          avoid_str = avoid_str + "location:" + coords.join(",");
-          if (i < avoid.length - 1) {
-            avoid_str += "|";
-          };
-          avoid_success += 1;
-        } else {
-          bad_avoid_inds.push(i);
-          console.log("Unable to geoscode avoid: " + avoid[i])
-        };
-      };
-      if (avoid_success > 0) {
-        avoid_str = "avoid=" + avoid_str + "&";
-      }
-    }
-
     path_type = jsonResponse.path_type;
     if (path_type == "") {
       path_type = "bicycle";
     }
-    api_key = jsonResponse.api_key;
 
-    console.log(bad_avoid_inds)
-    console.log(bad_waypoint_inds)
+    avoid = jsonResponse.avoid;
+
+    var avoid_arr = [];
+    if (avoid.length > 0) {
+      url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&details=route_details&apiKey=${api_key}`
+      intermediate_result = await fetch(url).then(res => res.json());
+
+      for (var i=0; i < avoid.length; i++) {
+        coords = await codeAddress(avoid[i]);
+        if (coords != null) {
+          avoid_arr.push(coords);
+        } else {
+          var found_match = false;
+          for (var j=0; j < intermediate_result.features[0].properties.legs[0].steps.length; j++) {
+            let name = intermediate_result.features[0].properties.legs[0].steps[j]["name"]
+            if (name != null && name.includes(avoid[i])) {
+              coords = intermediate_result.features[0].geometry.coordinates[0][intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]].reverse();
+              avoid_arr.push(coords);
+              found_match = true;
+              break;
+              };
+          };
+          if (!found_match) {
+            bad_avoid_inds.push(i);
+            console.log("Unable to geocode avoid: " + avoid[i])
+          };
+        };
+      };
+      if (avoid_arr.length > 0) {
+        avoid_str = "avoid=";
+        for (var i=0; i < avoid_arr.length; i++) {
+          avoid_str = avoid_str + "location:" + avoid_arr[i].join(",");
+          if (i < avoid_arr.length - 1) {
+            avoid_str += "|";
+          };
+        };
+        avoid_str = avoid_str + "&";
+      };
+    };
 
     $.ajax({
       type:'POST',
@@ -247,9 +272,9 @@ async function calcRoute() {
       dataType : 'json',
       data: JSON.stringify([{bad_waypoint_inds, bad_avoid_inds}]),
     });
-  }
+  };
 
-  const url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
+  url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
   console.log(url)
 
   map.data.forEach(function(feature) {
@@ -257,6 +282,7 @@ async function calcRoute() {
   });
 
   fetch(url).then(res => res.json()).then(result => {
+      console.log(result);
       map.data.addGeoJson(result);
   }, error => console.log(err));
 };

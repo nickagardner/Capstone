@@ -56,9 +56,11 @@ def choose_func(text, llm):
         prompt=chat_prompt,
     )
 
+    print(f"Choose input: {text}")
     result = chain.run(text)
-    print(result)
     result = result + "\n"
+
+    print(f"Choose result: {result}")
 
     pattern = ".*Assistant:.*\n"
     match = re.search(pattern, result)[0]
@@ -85,14 +87,29 @@ def split_changes(text, llm):
     User: avoid 42nd ave
     Assistant: avoid 42nd ave
 
-    User: prefer roads. route through north ave and Susan B. Anthony Museum & House
-    Assistant: prefer roads | route through north ave and Susan B. Anthony Museum & House
+    User: prefer roads and route through 120 charles rd and the golden gate bridge
+    Assistant: prefer roads | route through 120 charles rd and the golden gate bridge
 
     User: avoid johnson bridge and 17 Madison St
     Assistant: avoid johnson bridge and 17 Madison St
 
-    User: pass through the airport. use city streets
+    User: pass through the airport and use city streets
     Asssistant: pass through the airport | use city streets
+
+    User: don't go on fipson dr and preferred trails
+    Assistant: don't go on fipson dr | preferred trails
+
+    User: Avoid the downtown area and stop at the park and the museum.
+    Assistant: Avoid the downtown area | stop at the park and the museum.
+
+    User: stop at the park
+    Assistant: stop at the park
+
+    User: Stay away from the noisy downtown streets, stop at the coffee shop and the library.
+    Assistant: Stay away from the noisy downtown streets | stop at the coffee shop and the library.
+
+    User: I want to ride on roads
+    Asssistant: I want to ride on roads
     
     User: """
 
@@ -106,10 +123,11 @@ def split_changes(text, llm):
         prompt=chat_prompt,
         output_parser=CommaSeparatedListOutputParser()
     )
+    print(f"Split input: {text}")
     result = chain.run(text)[0]
     result = result + "\n"
 
-    print(result)
+    print(f"Split result: {result}")
 
     pattern = ".*Assistant:.*\n"
     match = re.search(pattern, result)[0]
