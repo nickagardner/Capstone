@@ -11,6 +11,7 @@ from utils import (add_waypoints, avoid_area,
                    prefer_path_type, update_changes_file, 
                    init_changes_file, get_changes_dict)
 from chains import choose_func, split_changes
+from routing import calc_route
 
 app = Flask(__name__)
 
@@ -34,11 +35,12 @@ llm = LlamaCpp(
 @app.route('/', methods=["POST","GET"])
 def index():
     if request.method == "POST":
-        if 'clear' in request.form:
+        json = request.get_json()['data_dict']
+        if json['clear'] == True:
             init_changes_file()
-        else:
+        elif json['todo'] != "":
             change_dict = get_changes_dict()
-            todo = request.form.get("todo")
+            todo = json["todo"]
             todo_sections = todo.split(".")
             for section in todo_sections:
                 changes = split_changes(section, llm)
@@ -57,31 +59,16 @@ def index():
                                 raise NotImplementedError("Method %s not implemented" % function)
                             method(param, change_dict)
             update_changes_file(change_dict)
+            
+        start = json["start"]
+        end = json["end"]
+        bounds = json["bounds"]
+        return calc_route(start, end, bounds)
     else:
         init_changes_file()
         
     return render_template('index.html', 
                             google_maps_string=f"https://maps.googleapis.com/maps/api/js?key={os.environ['GOOGLE_MAPS_API_KEY']}&libraries=places&callback=initMap")
-
-@app.route('/clean', methods=["POST"])
-def clean():
-    json = request.get_json()[0]
-    bad_waypoint_inds = json["bad_waypoint_inds"]
-    bad_avoid_inds = json["bad_avoid_inds"]
-
-    change_dict = get_changes_dict()
-
-    if bad_waypoint_inds is not None:
-        for i in sorted(bad_waypoint_inds, reverse=True):
-            del change_dict["waypoints"][i]
-
-    if bad_avoid_inds is not None:
-        for i in sorted(bad_avoid_inds, reverse=True):
-            del change_dict["avoid"][i]
-
-    update_changes_file(change_dict)
-
-    return ('', 204)
 
 
 if __name__ == "__main__":

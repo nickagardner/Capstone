@@ -33,5 +33,6 @@ def update_changes_file(change_dict):
         json.dump(change_dict, file)
 
 def init_changes_file():
-    change_dict = {"waypoints": [], "avoid": [], "path_type": "", "api_key": os.environ["GEOAPIFY_KEY"]}
+    change_dict = {"waypoints": [], "avoid": [], "path_type": "", "avoid_str": "", 
+                   "avoided_already":[], "avoided_locs":[], "api_key": os.environ["GEOAPIFY_KEY"]}
     update_changes_file(change_dict)

@@ -6,11 +6,6 @@ var directionsService;
 var bounds;
 var geocoder;
 var recognition;
-var avoid_str = "";
-var avoided_already = [];
-var avoided_locs = [];
-
-var conversion_dict = {"rd": "road", "st": "street", "dr": "drive", "ave": "avenue", "blvd": "boulevard", "ln": "lane", "pkwy": "parkway", "pl": "place", "ct": "court", "cir": "circle", "trl": "trail", "hwy": "highway"};
 
 function geocodeLatLng(latlng) {
   geocoder
@@ -25,23 +20,28 @@ function geocodeLatLng(latlng) {
     .catch((e) => window.alert("Geocoder failed due to: " + e));
 };
 
-function codeAddress(address) {
-  return new Promise((resolve, reject) => {
-    geocoder.geocode( { 'address': address, 'bounds': bounds}, function(results, status) {
-      if (status == 'OK') {
-        const coords = results[0].geometry.location;
-        resolve([coords.lat(), coords.lng()]);
-      } else {
-        resolve(null);
-      }
-    });
-});
-};
-
 $("#transcribe").click(function () {
   // recognition.lang = select_dialect.value;
   recognition.start();
 });
+
+async function requestRoute(clear=false){
+  let data_dict = {"start": document.getElementsByName('start')[0].value, 
+               "end": document.getElementsByName('end')[0].value,
+               "todo": $("#todo").val(),
+               "clear": clear,
+               "bounds": bounds};
+  $.ajax({
+    type:'POST',
+    url:'/',
+    contentType:'application/json',
+    dataType : 'json',
+    data: JSON.stringify({data_dict}),
+    success: function(data) {
+      renderRoute(data)
+    }
+  });
+}
 
 async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
@@ -59,16 +59,7 @@ async function initMap(lat, lon) {
       }
     }
     $("#todo").val(final_transcript);
-    $.ajax({
-      type:'POST',
-      url:'/',
-      data:{
-        todo:$("#todo").val()
-      },
-      success: function(data) {
-        calcRoute()
-      }
-    });
+    requestRoute();
   };
 
   geocoder = new google.maps.Geocoder();
@@ -135,192 +126,27 @@ async function initMap(lat, lon) {
 
     map.fitBounds(bounds);
     map.panToBounds(bounds);
-    calcRoute();
+    requestRoute();
   });
   
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
-    $.ajax({
-      type:'POST',
-      url:'/',
-      data:{
-        todo:$("#todo").val()
-      },
-      success: function(data) {
-        calcRoute()
-      }
-    });
+    requestRoute();
   });
 
   $(document).on('submit','#clear-button',function(e) {
     e.preventDefault();
-    $.ajax({
-      type:'POST',
-      url:'/',
-      data:{
-        clear: 1
-      },
-      success: function(data) {
-        calcRoute()
-      }
-    });
+    requestRoute(clear=True);
     $("#todo").val("");
-    avoid_str = "";
-    avoided_already = [];
   });
 }
 
-function check_route(intermediate_result, avoid) {
-  for (var k=0; k < intermediate_result.features[0].properties.legs.length; k++) {
-    for (var j=0; j < intermediate_result.features[0].properties.legs[k].steps.length; j++) {
-      let name = intermediate_result.features[0].properties.legs[0].steps[j]["name"]
-      if (name != null) {
-        name = name.toLowerCase();
-        let avoid_name = avoid.toLowerCase();
-        let avoid_arr = avoid_name.split(" ");
-        for (var l=0; l < avoid_arr.length; l++) {
-          if (avoid_arr[l] in conversion_dict) {
-            avoid_arr[l] = conversion_dict[avoid_arr[l]];
-          };
-        };
-        avoid_name = avoid_arr.join(" ");
-        if (name.includes(avoid_name)) {
-          let start_inds = intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]
-          let end_inds = intermediate_result.features[0].properties.legs[0].steps[j]["to_index"]
-          let start_coords = intermediate_result.features[0].geometry.coordinates[0][start_inds].reverse();
-          let end_coords = intermediate_result.features[0].geometry.coordinates[0][end_inds].reverse();
-          return {"start_coords": start_coords, "end_coords": end_coords};
-        };
-      };
-    };
-  };
-  return null;
-};
-
-function distance(waypoint_coords, end_coords) {
-  return ((end_coords[0] - waypoint_coords[0])**2 + (end_coords[1] - waypoint_coords[1])**2)**0.5
-}
-
-async function calcRoute() {
-  const jsonResponse = await fetch('/static/js/changes.json').then(response => response.json());
-  var api_key = jsonResponse.api_key;
-
-  var start = document.getElementById('start').value;
-  var start_coords = await codeAddress(start);
-  var end = document.getElementById('end').value;
-  var end_coords = await codeAddress(end);
-
-  var bad_waypoint_inds = [];
-  var bad_avoid_inds = [];
-
-  var waypoints;
-  var more_waypoints = "";
-  var avoid;
-  var path_type;
-  var coords;
-  var coord_array = [];
-  var dist_array = [];
-  var url;
-  var intermediate_result; 
-  if (jsonResponse != null) {
-    waypoints = jsonResponse.waypoints;
-
-    if (waypoints.length > 0) {
-      for (var i=0; i < waypoints.length; i++) {
-        coords = await codeAddress(waypoints[i]);
-        if (coords != null) {
-          let dist = distance(coords, end_coords)
-          if (dist < 1) {
-            coord_array.push(coords);
-            dist_array.push(dist);
-          } else {
-            bad_waypoint_inds.push(i);
-            console.log("Waypoint too far from destination: " + waypoints[i])
-          }
-        } else {
-          bad_waypoint_inds.push(i);
-          console.log("Unable to geocode waypoint: " + waypoints[i])
-        }
-      };
-
-      coord_array.sort(function(a, b){  
-        return dist_array[coord_array.indexOf(b)] - dist_array[coord_array.indexOf(a)];
-      });
-
-      for (var i=0; i < coord_array.length; i++) {
-        more_waypoints += coord_array[i].join(",");
-        more_waypoints += "|";
-      };
-    };
-
-    path_type = jsonResponse.path_type;
-    if (path_type == "") {
-      path_type = "bicycle";
-    }
-
-    avoid = jsonResponse.avoid;
-
-    if (avoid.length > 0) {
-      url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`
-      intermediate_result = await fetch(url).then(res => res.json());
-
-      for (var i=0; i < avoid.length; i++) {
-        if (!(avoid[i] in avoided_already)) {
-          coords = check_route(intermediate_result, avoid[i]);
-          if (coords == null) {
-            let new_coords = await codeAddress(avoid[i]);
-            if (new_coords != null) {
-              let dist = distance(new_coords, end_coords)
-              if (dist < 1) {
-                avoided_already.push(avoid[i]);
-                avoided_locs.push(new_coords);
-              } else {
-                bad_avoid_inds.push(i);
-                console.log("Avoid too far from route: " + avoid[i])
-              }
-            } else {
-              bad_avoid_inds.push(i);
-              console.log("Unable to geocode avoid: " + avoid[i])
-            }
-          } else {
-            avoided_already.push(avoid[i]);
-            avoided_locs.push(coords["start_coords"]);
-            avoided_locs.push(coords["end_coords"]);
-          };
-        };
-      };
-      if (avoided_locs.length > 0) {
-        avoid_str = "avoid=";
-        for (var i=0; i < avoided_locs.length; i++) {
-          avoid_str = avoid_str + "location:" + avoided_locs[i].join(",");
-          if (i < avoided_locs.length - 1) {
-            avoid_str += "|";
-          };
-        };
-        avoid_str = avoid_str + "&";
-      };
-    };
-
-    $.ajax({
-      type:'POST',
-      url:'/clean',
-      contentType:'application/json',
-      dataType : 'json',
-      data: JSON.stringify([{bad_waypoint_inds, bad_avoid_inds}]),
-    });
-  };
-
-  url = `https://api.geoapify.com/v1/routing?waypoints=${start_coords.join(',')}|${more_waypoints}${end_coords.join(',')}&mode=${path_type}&${avoid_str}details=route_details&apiKey=${api_key}`;
-  console.log(url)
-
+async function renderRoute(route_features) {
   map.data.forEach(function(feature) {
     map.data.remove(feature);
   });
 
-  fetch(url).then(res => res.json()).then(result => {
-      console.log(result);
-      map.data.addGeoJson(result);
-  }, error => console.log(err));
+  map.data.addGeoJson(route_features);
 };
 
 if ("geolocation" in navigator) {

@@ -35,8 +35,8 @@ def choose_func(text, llm):
     User: avoid main street
     Assistant: avoid_area | main street
 
-    User: route through north ave and Susan B. Anthony Museum & House
-    Assistant: add_waypoints | north ave | Susan B. Anthony Museum & House
+    User: route through north ave and city hall
+    Assistant: add_waypoints | north ave | city hall
 
     User: avoid johnson bridge and 17 Madison St
     Assistant: avoid_area | johnson bridge | 17 Madison St
