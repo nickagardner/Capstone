@@ -185,8 +185,11 @@ function check_route(intermediate_result, avoid) {
         };
         avoid_name = avoid_arr.join(" ");
         if (name.includes(avoid_name)) {
-          let coords = intermediate_result.features[0].geometry.coordinates[0][intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]].reverse();
-          return coords;
+          let start_inds = intermediate_result.features[0].properties.legs[0].steps[j]["from_index"]
+          let end_inds = intermediate_result.features[0].properties.legs[0].steps[j]["to_index"]
+          let start_coords = intermediate_result.features[0].geometry.coordinates[0][start_inds].reverse();
+          let end_coords = intermediate_result.features[0].geometry.coordinates[0][end_inds].reverse();
+          return {"start_coords": start_coords, "end_coords": end_coords};
         };
       };
     };
@@ -267,15 +270,22 @@ async function calcRoute() {
           if (coords == null) {
             let new_coords = await codeAddress(avoid[i]);
             if (new_coords != null) {
-              avoided_already.push(avoid[i]);
-              avoided_locs.push(new_coords);
+              let dist = distance(new_coords, end_coords)
+              if (dist < 1) {
+                avoided_already.push(avoid[i]);
+                avoided_locs.push(new_coords);
+              } else {
+                bad_avoid_inds.push(i);
+                console.log("Avoid too far from route: " + avoid[i])
+              }
             } else {
               bad_avoid_inds.push(i);
               console.log("Unable to geocode avoid: " + avoid[i])
             }
           } else {
             avoided_already.push(avoid[i]);
-            avoided_locs.push(coords);
+            avoided_locs.push(coords["start_coords"]);
+            avoided_locs.push(coords["end_coords"]);
           };
         };
       };
