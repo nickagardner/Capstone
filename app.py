@@ -36,6 +36,7 @@ llm = LlamaCpp(
 def index():
     if request.method == "POST":
         json = request.get_json()['data_dict']
+        print(json)
         if json['clear'] == True:
             init_changes_file()
         elif json['todo'] != "":

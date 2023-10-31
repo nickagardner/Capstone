@@ -47,7 +47,7 @@ def distance(waypoint_coords, end_coords):
 def calc_route(start, end, bounds):
     change_dict = get_changes_dict()
 
-    api_key = change_dict["api_key"]
+    api_key = os.environ["GEOAPIFY_KEY"]
     avoid_str = change_dict["avoid_str"]
     avoided_already = change_dict["avoided_already"]
     avoided_locs = change_dict["avoided_locs"]

@@ -136,7 +136,7 @@ async function initMap(lat, lon) {
 
   $(document).on('submit','#clear-button',function(e) {
     e.preventDefault();
-    requestRoute(clear=True);
+    requestRoute(true);
     $("#todo").val("");
   });
 }

@@ -34,5 +34,5 @@ def update_changes_file(change_dict):
 
 def init_changes_file():
     change_dict = {"waypoints": [], "avoid": [], "path_type": "", "avoid_str": "", 
-                   "avoided_already":[], "avoided_locs":[], "api_key": os.environ["GEOAPIFY_KEY"]}
+                   "avoided_already":[], "avoided_locs":[]}
     update_changes_file(change_dict)
