@@ -1,11 +1,7 @@
 import os
 import requests
 
-from utils import get_changes_dict, update_changes_file
-
-conversion_dict = {"rd": "road", "st": "street", "dr": "drive", "ave": "avenue", "blvd": 
-                   "boulevard", "ln": "lane", "pkwy": "parkway", "pl": "place", "ct": "court", 
-                   "cir": "circle", "trl": "trail", "hwy": "highway"}
+from utils import get_changes_dict, update_changes_file, process_string
 
 def codeAddress(address, bounds):
     response = requests.get(f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&bounds={bounds}&key={os.environ['GOOGLE_MAPS_API_KEY']}")
@@ -21,12 +17,7 @@ def codeAddress(address, bounds):
         return None
 
 def check_route(intermediate_result, avoid):
-    avoid_name = avoid.lower()
-    avoid_arr = avoid_name.split(" ")
-    for i in range(len(avoid_arr)):
-        if avoid_arr[i] in conversion_dict:
-            avoid_arr[i] = conversion_dict[avoid_arr[i]]
-    avoid_name = " ".join(avoid_arr)
+    avoid_name = process_string(avoid)
     for leg in intermediate_result["features"][0]["properties"]["legs"]:
         for step in leg["steps"]:
             try:

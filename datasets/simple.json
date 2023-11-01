@@ -1,0 +1,104 @@
+{"single": [
+    {"modification": "avoid scottsville rd", 
+    "avoid": ["scottsville rd"], 
+    "waypoints": null, 
+    "path_type": null},
+
+    {"modification": "prefer trails", 
+    "avoid": null, 
+    "waypoints": null, 
+    "path_type": "mountain_bike"},
+
+    {"modification": "stop at mt hope cemetery", 
+    "avoid": null, 
+    "waypoints": ["mt hope cemetery"], 
+    "path_type": null},
+
+    {"modification": "skip Susan B Anthony Museum & House", 
+    "avoid": ["Susan B Anthony Museum & House"], 
+    "waypoints": null, 
+    "path_type": null},
+
+    {"modification": "I want to ride on roads", 
+    "avoid": null, 
+    "waypoints": null, 
+    "path_type": "road_bike"},
+
+    {"modification": "route through central park and the empire state building", 
+    "avoid": null, 
+    "waypoints": ["central park", "empire state building"], 
+    "path_type": null},
+
+    {"modification": "don't go on W Broad st", 
+    "avoid": ["W Broad st"], 
+    "waypoints": null, 
+    "path_type": null},
+
+    {"modification": "use city streets", 
+    "avoid": null, 
+    "waypoints": null, 
+    "path_type": "bicycle"},
+
+    {"modification": "add chester springs to stops", 
+    "avoid": null, 
+    "waypoints": ["chester springs"], 
+    "path_type": null},
+
+    {"modification": "stay away from 121 W Swinton Ave", 
+    "avoid": ["121 W Swinton Ave"], 
+    "waypoints": null, 
+    "path_type": null},
+
+    {"modification": "stick to bike path", 
+    "avoid": null, 
+    "waypoints": null, 
+    "path_type": "mountain_bike"},
+
+    {"modification": "stop at 12 Whispering Water Dr and 1021 N Ocean Blvd", 
+    "avoid": null, 
+    "waypoints": ["12 Whispering Water Dr", "1021 N Ocean Blvd"], 
+    "path_type": null},
+
+    {"modification": "keep away from Burr Street", 
+    "avoid": ["Burr Street"], 
+    "waypoints": null, 
+    "path_type": null},
+
+    {"modification": "use bike lanes", 
+    "avoid": null, 
+    "waypoints": null, 
+    "path_type": "bicycle"},
+
+    {"modification": "stop at Niagara Falls", 
+    "avoid": null, 
+    "waypoints": ["Niagara Falls"], 
+    "path_type": null}
+    ],
+
+"multi": [ 
+    {"modification": "prefer trails. stop at mt hope cemetery and avoid scottsville rd", 
+    "avoid": ["scottsville rd"], 
+    "waypoints": ["mt hope cemetery"], 
+    "path_type": "mountain_bike"},
+
+    {"modification": "I want to ride on roads and route through central park and the empire state building. skip Susan B Anthony Museum & House", 
+    "avoid": ["Susan B Anthony Museum & House"], 
+    "waypoints": ["central park", "empire state building"], 
+    "path_type": "road_bike"},
+
+    {"modification": "don't go on W Broad st and use city streets and add chester springs to stops", 
+    "avoid": ["W Broad st"],
+    "waypoints": ["chester springs"], 
+    "path_type": "bicycle"},
+
+    {"modification": "stop at 12 Whispering Water Dr and 1021 N Ocean Blvd and stay away from 121 W Swinton Ave. stick to bike path", 
+    "avoid": ["121 W Swinton Ave"],
+    "waypoints": ["12 Whispering Water Dr", "1021 N Ocean Blvd"], 
+    "path_type": "mountain_bike"},
+
+    {"modification": "keep away from Burr Street and use bike lanes and stop at Niagara Falls",
+    "avoid": ["Burr Street"],
+    "waypoints": ["Niagara Falls"],
+    "path_type": "bicycle"}
+    ]
+}
