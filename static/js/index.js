@@ -96,26 +96,41 @@ async function initMap(lat, lon) {
     bounds: defaultBounds
   });
 
-  google.maps.event.addListener(start_box, 'places_changed', function(){
-    var places = start_box.getPlaces();
-    var i, place;
-
-    for(var i=0; place=places[i];i++){
-        bounds.extend(place.geometry.location);
-        marker.setPosition(place.geometry.location);
-    }
-
-    map.fitBounds(bounds);
-    map.panToBounds(bounds);
-  });
-
   var end = document.getElementById('end');
   
   var end_box = new google.maps.places.SearchBox(end, {
     bounds: defaultBounds
   });
 
+  google.maps.event.addListener(start_box, 'places_changed', function(){
+    bounds = new google.maps.LatLngBounds();
+
+    var places = start_box.getPlaces();
+    var i, place;
+
+    for(var i=0; place=places[i];i++){
+        bounds.extend(place.geometry.location);
+        marker.setPosition(place.geometry.location);
+    };
+
+    if (end_box.getPlaces().length > 0) {
+      var places = end_box.getPlaces();
+      var i, place;
+
+      for(i=0; place=places[i];i++){
+          bounds.extend(place.geometry.location);
+      }
+    };
+
+    map.fitBounds(bounds);
+    map.panToBounds(bounds);
+    if (end_box.getPlaces().length > 0) {
+      requestRoute();
+    };
+  });
+
   google.maps.event.addListener(end_box, 'places_changed', function(){
+    bounds = new google.maps.LatLngBounds();
     var places = end_box.getPlaces();
     var i, place;
 
@@ -123,6 +138,13 @@ async function initMap(lat, lon) {
         bounds.extend(place.geometry.location);
         end_marker.setPosition(place.geometry.location);
     }
+
+    var places = start_box.getPlaces();
+    var i, place;
+
+    for(var i=0; place=places[i];i++){
+        bounds.extend(place.geometry.location);
+    };
 
     map.fitBounds(bounds);
     map.panToBounds(bounds);
@@ -142,6 +164,7 @@ async function initMap(lat, lon) {
 }
 
 async function renderRoute(route_features) {
+  console.log(route_features)
   map.data.forEach(function(feature) {
     map.data.remove(feature);
   });

@@ -18,17 +18,17 @@ def codeAddress(address, bounds):
 
 def check_route(intermediate_result, avoid):
     avoid_name = process_string(avoid)
-    for leg in intermediate_result["features"][0]["properties"]["legs"]:
+    for idx, leg in enumerate(intermediate_result["features"][0]["properties"]["legs"]):
         for step in leg["steps"]:
             try:
                 name = step["name"].lower()
                 if avoid_name in name:
                     start_inds = step["from_index"]
                     end_inds = step["to_index"]
-                    start_coords = intermediate_result["features"][0]["geometry"]["coordinates"][0][start_inds][::-1]
-                    end_coords = intermediate_result["features"][0]["geometry"]["coordinates"][0][end_inds][::-1]
+                    start_coords = intermediate_result["features"][0]["geometry"]["coordinates"][idx][start_inds][::-1]
+                    end_coords = intermediate_result["features"][0]["geometry"]["coordinates"][idx][end_inds][::-1]
                     return {"start_coords": start_coords, "end_coords": end_coords}
-            except:
+            except Exception as e:
                 pass
     return None
 
@@ -73,7 +73,7 @@ def calc_route(start, end, bounds):
                     bad_waypoint_inds.append(idx)
                     print("Unable to geocode waypoint: " + waypoint)
 
-            sorted_array = [x for _, x in sorted(zip(dist_array, coord_array))]
+            sorted_array = [x for _, x in sorted(zip(dist_array, coord_array), reverse=True)]
 
             for coord in sorted_array:
                 more_waypoints += ",".join(map(str, coord))
