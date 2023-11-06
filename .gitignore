@@ -2,3 +2,4 @@ llama.cpp/
 .DS_Store
 __pycache__/
 static/js/changes.json
+static/js/changes[0-9]*.json

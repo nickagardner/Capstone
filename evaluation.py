@@ -1,15 +1,15 @@
 import json
-from utils import process_changes, instantiate_llm, get_changes_dict, init_changes_file, process_string
+from utils import process_changes, instantiate_llm, get_changes_dict, init_changes_file, process_string, process_changes_ensemble
 from routing import calc_route, check_route, codeAddress
 
 from dotenv import load_dotenv
 load_dotenv()
 
-def evaluate_dataset(dataset_name):
+def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=False):
     with open(f"project/datasets/{dataset_name}.json", "r") as file:
         dataset = json.load(file)
 
-    llm = instantiate_llm()
+    llm = instantiate_llm(temperature=temperature, top_p=top_p, open_ai=open_ai)
 
     single_num_correct = 0
     single_num_include = 0
@@ -30,7 +30,10 @@ def evaluate_dataset(dataset_name):
         print("-----------------------------")
         print("Input: " + input)
 
-        process_changes(input, llm)
+        if llm_num == 1:
+            process_changes(input, llm)
+        else:
+            process_changes_ensemble(input, llm, llm_num)
 
         change_dict = get_changes_dict()
 
@@ -145,7 +148,10 @@ def evaluate_dataset(dataset_name):
         print("-----------------------------")
         print("Input: " + input)
 
-        process_changes(input, llm)
+        if llm_num == 1:
+            process_changes(input, llm)
+        else:
+            process_changes_ensemble(input, llm, llm_num)
 
         change_dict = get_changes_dict()
 
@@ -251,6 +257,6 @@ def evaluate_dataset(dataset_name):
 
 
 if __name__ == "__main__":
-    evaluate_dataset("simple")
+    evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0, top_p=1)
 
 
