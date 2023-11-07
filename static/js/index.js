@@ -2,17 +2,17 @@ var map;
 var marker; 
 var end_marker;
 
-var directionsService;
 var bounds;
+var defaultBounds;
 var geocoder;
 var recognition;
 
-function geocodeLatLng(latlng) {
+function coordToAddress(latlng) {
   geocoder
     .geocode({ location: latlng })
     .then((response) => {
       if (response.results[0]) {
-        document.getElementsByName('start')[0].value = response.results[0].formatted_address;
+        document.getElementsByName('start')[0].value = response.results[0].formatted_address
       } else {
         window.alert("No results found");
       }
@@ -47,7 +47,6 @@ async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
   const myLatLng = { lat: lat, lng: lon };
   bounds = new google.maps.LatLngBounds();
-  directionsService = new google.maps.DirectionsService();
 
   recognition = new webkitSpeechRecognition();
 
@@ -61,9 +60,6 @@ async function initMap(lat, lon) {
     $("#todo").val(final_transcript);
     requestRoute();
   };
-
-  geocoder = new google.maps.Geocoder();
-  geocodeLatLng(myLatLng)
 
   map = new Map(document.getElementById("map"), {
     center: myLatLng,
@@ -86,7 +82,7 @@ async function initMap(lat, lon) {
 
   bounds.extend(myLatLng);
 
-  var defaultBounds = new google.maps.LatLngBounds(
+  defaultBounds = new google.maps.LatLngBounds(
     new google.maps.LatLng(lat-0.2, lon+0.2),
     new google.maps.LatLng(lat+0.2, lon+0.2));
   
@@ -113,14 +109,16 @@ async function initMap(lat, lon) {
         marker.setPosition(place.geometry.location);
     };
 
-    if (end_box.getPlaces().length > 0) {
+    try {
       var places = end_box.getPlaces();
       var i, place;
 
       for(i=0; place=places[i];i++){
-          bounds.extend(place.geometry.location);
-      }
-    };
+        bounds.extend(place.geometry.location);
+      };
+    } catch(err) {
+        console.log(err)
+    }
 
     map.fitBounds(bounds);
     map.panToBounds(bounds);
@@ -139,17 +137,24 @@ async function initMap(lat, lon) {
         end_marker.setPosition(place.geometry.location);
     }
 
-    var places = start_box.getPlaces();
-    var i, place;
-
-    for(var i=0; place=places[i];i++){
+    try{
+      
+      var places = start_box.getPlaces();
+      var i, place;
+      for(var i=0; place=places[i];i++){
         bounds.extend(place.geometry.location);
-    };
+      };
+    } catch(err) {
+        bounds.extend(myLatLng);
+    }
 
     map.fitBounds(bounds);
     map.panToBounds(bounds);
     requestRoute();
   });
+
+  geocoder = new google.maps.Geocoder();
+  coordToAddress(myLatLng)
   
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
