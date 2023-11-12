@@ -9,6 +9,8 @@ from utils import (add_waypoints, avoid_area,
                    init_changes_file, get_changes_dict,
                    process_changes, instantiate_llm)
 from routing import calc_route
+from trails import find_nearby_trails
+from chains import mod_or_trail, extract_trail_info
 
 app = Flask(__name__)
 
@@ -21,12 +23,17 @@ def index():
         if json['clear'] == True:
             init_changes_file()
         elif json['todo'] != "":
-            process_changes(json["todo"], llm)
+            type = mod_or_trail(json['todo'], llm)
+            if type == "Trail":
+                details = extract_trail_info(json['todo'], llm)
+                return find_nearby_trails(json["start"], json["bounds"], details), 201
+            else:
+                process_changes(json["todo"], llm)
             
         start = json["start"]
         end = json["end"]
         bounds = json["bounds"]
-        return calc_route(start, end, bounds)
+        return calc_route(start, end, bounds), 200
     else:
         init_changes_file()
         

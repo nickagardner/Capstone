@@ -7,6 +7,8 @@ var defaultBounds;
 var geocoder;
 var recognition;
 
+var svgMarker
+
 function coordToAddress(latlng) {
   geocoder
     .geocode({ location: latlng })
@@ -37,9 +39,14 @@ async function requestRoute(clear=false){
     contentType:'application/json',
     dataType : 'json',
     data: JSON.stringify({data_dict}),
-    success: function(data) {
-      renderRoute(data)
-    }
+    statusCode: {
+      200: function (data) {
+        renderRoute(data)
+      },
+      201: function (data) {
+        renderWindows(data)
+      },
+    },
   });
 }
 
@@ -47,6 +54,16 @@ async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
   const myLatLng = { lat: lat, lng: lon };
   bounds = new google.maps.LatLngBounds();
+
+  svgMarker = {
+    path: "M224 32H64C46.3 32 32 46.3 32 64v64c0 17.7 14.3 32 32 32H441.4c4.2 0 8.3-1.7 11.3-4.7l48-48c6.2-6.2 6.2-16.4 0-22.6l-48-48c-3-3-7.1-4.7-11.3-4.7H288c0-17.7-14.3-32-32-32s-32 14.3-32 32zM480 256c0-17.7-14.3-32-32-32H288V192H224v32H70.6c-4.2 0-8.3 1.7-11.3 4.7l-48 48c-6.2 6.2-6.2 16.4 0 22.6l48 48c3 3 7.1 4.7 11.3 4.7H448c17.7 0 32-14.3 32-32V256zM288 480V384H224v96c0 17.7 14.3 32 32 32s32-14.3 32-32z",
+    fillColor: "red",
+    fillOpacity: 0.7,
+    strokeWeight: 1,
+    rotation: 0,
+    scale: 0.075,
+    anchor: new google.maps.Point(0, 10),
+  };
 
   recognition = new webkitSpeechRecognition();
 
@@ -175,6 +192,61 @@ async function renderRoute(route_features) {
   });
 
   map.data.addGeoJson(route_features);
+};
+
+function setEndAndRequest(end) {
+  $("#end").val(end);
+  requestRoute();
+};
+
+async function renderWindows(route_features) {
+  map.data.forEach(function(feature) {
+    map.data.remove(feature);
+  });
+
+  let trails = route_features.data
+
+  for (var i = 0; i < trails.length; i++) {
+    const contentString =
+    '<div id="content">' +
+    '<div id="siteNotice">' +
+    "</div>" +
+    '<h1 id="firstHeading" class="firstHeading">' + trails[i].name + '</h1>' +
+    '<div style="text-align: center" id="imageContent">' +
+
+    '<img width="300" height="300" src="' + trails[i].thumbnail + '"></img>' + 
+    "</div>" +
+    '<div id="bodyContent">' +
+    "<p>" + trails[i].description + "</p>" +
+    '<p><b>Length:</b> ' + trails[i].length + '</p>' +
+    '<p><b>Difficulty:</b> ' + trails[i].difficulty + '</p>' +
+    '<p><b>Rating:</b> ' + trails[i].rating + '</p>' +
+    "</div>" +
+    "</div>";
+
+    bounds.extend({ lat: Number(trails[i].lat), lng: Number(trails[i].lon)});
+
+    const infowindow = new google.maps.InfoWindow({
+      content: contentString,
+      ariaLabel: trails[i].name,
+      maxWidth: 400,
+    });
+    const marker = new google.maps.Marker({
+      position: { lat: Number(trails[i].lat), lng: Number(trails[i].lon)},
+      map,
+      title: trails[i].name,
+      icon: svgMarker
+    });
+  
+    marker.addListener("click", () => {
+      infowindow.open({
+        anchor: marker,
+        map,
+      });
+    });
+  };
+  map.fitBounds(bounds);
+  map.panToBounds(bounds);
 };
 
 if ("geolocation" in navigator) {

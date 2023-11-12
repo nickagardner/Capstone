@@ -42,12 +42,12 @@ def choose_func(text, llm):
     Assistant: avoid_area | johnson bridge | 17 Madison St
 
     User: I want to ride on roads
-    Asssistant: prefer_path_type | roads
+    Assistant: prefer_path_type | roads
     
     User: """
 
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-    human_template = "{text}"
+    human_template = "{text}\nAssistant:"
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
     
     chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
@@ -57,7 +57,7 @@ def choose_func(text, llm):
     )
 
     print(f"Choose input: {text}")
-    result = chain.run(text)
+    result = "Assistant: " + chain.run(text)
     result = result + "\n"
 
     print(f"Choose result: {result}")
@@ -94,7 +94,7 @@ def split_changes(text, llm):
     Assistant: avoid johnson bridge and 17 Madison St
 
     User: pass through the airport and use city streets
-    Asssistant: pass through the airport | use city streets
+    Assistant: pass through the airport | use city streets
 
     User: Avoid the downtown area and stop at the park and the museum.
     Assistant: Avoid the downtown area | stop at the park and the museum.
@@ -106,7 +106,7 @@ def split_changes(text, llm):
     Assistant: Stay away from the noisy downtown street | stop at the coffee shop and the library.
 
     User: I want to ride on roads
-    Asssistant: I want to ride on roads
+    Assistant: I want to ride on roads
 
     User: don't go on fipson dr and preferred trails
     Assistant: don't go on fipson dr | preferred trails
@@ -117,7 +117,7 @@ def split_changes(text, llm):
     User: """
 
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-    human_template = "{text}"
+    human_template = "{text}\nAssistant:"
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
     
     chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
@@ -127,7 +127,7 @@ def split_changes(text, llm):
         output_parser=CommaSeparatedListOutputParser()
     )
     print(f"Split input: {text}")
-    result = chain.run(text)[0]
+    result = "Assistant: " + chain.run(text)[0]
     result = result + "\n"
 
     print(f"Split result: {result}")
@@ -142,3 +142,136 @@ def split_changes(text, llm):
         requests.append(parameter.strip("\"\',.`\n "))
 
     return requests
+
+def mod_or_trail(text, llm):
+    template = """You are a helpful assistant who parses text and determines whether the user text is a modification request or a request for information on nearby trails.
+    A user will pass in text, which you should parse to determine which type of request is being made.
+    Return ONLY the response to the last user request and nothing more.
+
+    Request options are as follows:
+        1. Modification - add if the user requests to modify their route.
+        2. Trail - add if the user requests information on nearby trails.
+    
+    User: prefer trails
+    Assistant: Modification
+
+    User: list nearby trails
+    Assistant: Trail
+
+    User: stop at boston common
+    Assistant: Modification
+
+    User: route through north ave and city hall
+    Assistant: Modification
+    
+    User: show me Nature Park routes
+    Assistant: Trail
+
+    User: Looking for intermediate trails with rating above 3
+    Assistant: Trail
+
+    User: avoid johnson bridge and 17 Madison St
+    Assistant: Modification
+
+    User: what parks are good for biking
+    Assistant: Trail
+    
+    User: """
+
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+    human_template = "{text}\nAssistant:"
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+    chain = LLMChain(
+        llm=llm,
+        prompt=chat_prompt,
+    )
+
+    print(f"Mod/Trail input: {text}")
+    result = "Assistant: " + chain.run(text)
+    result = result + "\n"
+
+    print(f"Mod/Trail result: {result}")
+
+    pattern = ".*Assistant:.*\n"
+    match = re.search(pattern, result)[0]
+
+    content = match.split("Assistant:")[-1]
+    type = content.strip("\"\',.`\n ")
+
+    return type
+
+def extract_trail_info(text, llm):
+    template = """You are a helpful assistant who parses text and extracts user requirements from their request.
+    A user will pass in text, which you should parse to determine which requirements the user specifies.
+    Return ONLY the response to the last user request and nothing more.
+
+    Request options are as follows:
+        1. Difficulty - difficulty rating of the trail. Options here are easy, intermediate, and hard.
+        2. Distance - how far from the user's current location the trail is.
+        3. Rating - rating of the trail. Options here are floats between 0 and 5.
+        4. Length - length of the trail.
+
+    User: list nearby trails
+    Assistant: No changes
+
+    User: Looking for intermediate trails with rating above 3
+    Assistant: Difficulty(Intermediate) | Rating(> 3)
+
+    User: show me Nature Park routes
+    Assistant: No changes
+
+    User: routes with length of 5 miles or less
+    Assistant: Length(< 5)
+
+    User: what are good places to ride nearby
+    Assistant: No changes
+
+    User: what trails are within 10 miles
+    Assistant: Distance(< 10)
+
+    User: Looking for easy trails
+    Assistant: Difficulty(Easy)
+
+    User: tell me about trails nearby
+    Assistant: No changes
+    
+    User: """
+
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+    human_template = "{text}\nAssistant:"
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+    chain = LLMChain(
+        llm=llm,
+        prompt=chat_prompt,
+    )
+
+    print(f"Mod/Trail input: {text}")
+    result = "Assistant: " + chain.run(text)
+
+    print(f"Mod/Trail result: {result}")
+    result = result + "\n"
+
+    pattern = ".*Assistant:.*\n"
+    match = re.search(pattern, result)[0]
+    content = match.split("Assistant:")[-1]
+
+    if "No changes" in content:
+        return None
+    else:
+        components = content.split("|")
+        requests = {}
+        for request in components:
+            type = request.split("(")[0].strip("\"\',.`\n ")
+            value = request.split("(")[1].strip("\"\',.`\n )")
+            if len(value.split(" ")) > 1:
+                operator, value = value.split(" ")
+                requests[type] = [operator, value]
+            else:
+                requests[type] = value
+
+        return requests
+

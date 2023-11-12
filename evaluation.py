@@ -257,6 +257,6 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
 
 
 if __name__ == "__main__":
-    evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0, top_p=1)
+    evaluate_dataset("simple", open_ai=False, llm_num=5, temperature=0.1, top_p=1)
 
 
