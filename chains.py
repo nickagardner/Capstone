@@ -222,14 +222,14 @@ def extract_trail_info(text, llm):
     User: show me Nature Park routes
     Assistant: No changes
 
-    User: routes with length of 5 miles or less
-    Assistant: Length(< 5)
+    User: routes with rating above 2 and length of 5 miles or less
+    Assistant: Rating(> 2) | Length(< 5)
 
     User: what are good places to ride nearby
     Assistant: No changes
 
-    User: what trails are within 10 miles
-    Assistant: Distance(< 10)
+    User: what trails are within 10 miles and are easier than advanced
+    Assistant: Distance(< 10) | Difficulty(< Advanced)
 
     User: Looking for easy trails
     Assistant: Difficulty(Easy)

@@ -11,7 +11,7 @@ def get_truth(inp, relate, cut):
            '>=': operator.ge,
            '<=': operator.le,
            '==': operator.eq}
-    return ops[relate](inp, cut)
+    return ops[relate](float(inp), float(cut))
 
 def find_nearby_trails(address, bounds, details):
     url = "https://trailapi-trailapi.p.rapidapi.com/trails/explore/"
@@ -33,7 +33,8 @@ def find_nearby_trails(address, bounds, details):
     response = requests.get(url, headers=headers, params=querystring).json()
 
     if details is not None:
-        for i in range(len(response["data"])):
+        i = 0
+        while i < len(response["data"]):
             item_removed = False
             if "Rating" in details:
                 operator = "=="
@@ -56,9 +57,16 @@ def find_nearby_trails(address, bounds, details):
                     item_removed = True
 
             if not item_removed and "Difficulty" in details:
-                if response["data"][i]["difficulty"] != details["Difficulty"]:
+                operator = "=="
+                if len(details["Difficulty"]) > 1:
+                    operator = details["Difficulty"][0]
+
+                if not get_truth(response["data"][i]["Difficulty"], operator, details["Difficulty"][1]):
                     response["data"].pop(i)
                     i -= 1
+                    item_removed = True
+
+            i+=1
 
 
     return response

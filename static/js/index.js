@@ -1,13 +1,18 @@
 var map;
 var marker; 
 var end_marker;
+var myLatLng;
 
 var bounds;
 var defaultBounds;
 var geocoder;
 var recognition;
 
-var svgMarker
+var start_box;
+var end_box;
+
+var svgMarker;
+var markers = [];
 
 function coordToAddress(latlng) {
   geocoder
@@ -52,7 +57,7 @@ async function requestRoute(clear=false){
 
 async function initMap(lat, lon) {
   const { Map } = await google.maps.importLibrary("maps");
-  const myLatLng = { lat: lat, lng: lon };
+  myLatLng = { lat: lat, lng: lon };
   bounds = new google.maps.LatLngBounds();
 
   svgMarker = {
@@ -105,68 +110,26 @@ async function initMap(lat, lon) {
   
   var start = document.getElementById('start');
   
-  var start_box = new google.maps.places.SearchBox(start, {
+  start_box = new google.maps.places.SearchBox(start, {
     bounds: defaultBounds
   });
 
   var end = document.getElementById('end');
   
-  var end_box = new google.maps.places.SearchBox(end, {
+  end_box = new google.maps.places.SearchBox(end, {
     bounds: defaultBounds
   });
 
   google.maps.event.addListener(start_box, 'places_changed', function(){
-    bounds = new google.maps.LatLngBounds();
-
-    var places = start_box.getPlaces();
-    var i, place;
-
-    for(var i=0; place=places[i];i++){
-        bounds.extend(place.geometry.location);
-        marker.setPosition(place.geometry.location);
-    };
-
-    try {
-      var places = end_box.getPlaces();
-      var i, place;
-
-      for(i=0; place=places[i];i++){
-        bounds.extend(place.geometry.location);
-      };
-    } catch(err) {
-        console.log(err)
-    }
-
-    map.fitBounds(bounds);
-    map.panToBounds(bounds);
+    refitBounds();
     if (end_box.getPlaces().length > 0) {
       requestRoute();
     };
+    myLatLng = start_box.getPlaces()[0].geometry.location;
   });
 
   google.maps.event.addListener(end_box, 'places_changed', function(){
-    bounds = new google.maps.LatLngBounds();
-    var places = end_box.getPlaces();
-    var i, place;
-
-    for(i=0; place=places[i];i++){
-        bounds.extend(place.geometry.location);
-        end_marker.setPosition(place.geometry.location);
-    }
-
-    try{
-      
-      var places = start_box.getPlaces();
-      var i, place;
-      for(var i=0; place=places[i];i++){
-        bounds.extend(place.geometry.location);
-      };
-    } catch(err) {
-        bounds.extend(myLatLng);
-    }
-
-    map.fitBounds(bounds);
-    map.panToBounds(bounds);
+    refitBounds();
     requestRoute();
   });
 
@@ -175,14 +138,61 @@ async function initMap(lat, lon) {
   
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
+    if (markers.length > 0) {
+      clear();
+    };
     requestRoute();
   });
 
   $(document).on('submit','#clear-button',function(e) {
     e.preventDefault();
-    requestRoute(true);
+    if (markers.length > 0) {
+      clear();
+    };
+    if ($("#end").val() != "") {
+      requestRoute(true);
+    };
     $("#todo").val("");
   });
+}
+
+async function refitBounds() {
+  bounds = new google.maps.LatLngBounds();
+
+  try{
+    var places = start_box.getPlaces();
+    var i, place;
+    for(var i=0; place=places[i];i++){
+      bounds.extend(place.geometry.location);
+      marker.setPosition(place.geometry.location);
+    };
+  } catch(err) {
+    bounds = new google.maps.LatLngBounds(
+      new google.maps.LatLng(myLatLng.lat-0.01, myLatLng.lng-0.01),
+      new google.maps.LatLng(myLatLng.lat+0.01, myLatLng.lng+0.01));
+  }
+
+  try {
+    var places = end_box.getPlaces();
+    var i, place;
+
+    for(i=0; place=places[i];i++){
+      bounds.extend(place.geometry.location);
+      end_marker.setPosition(place.geometry.location);
+    };
+  } catch(err) {
+    console.log(err)
+  }
+  map.fitBounds(bounds);
+  map.panToBounds(bounds);
+}
+
+async function clear () {
+  for (var i=0;i<markers.length;i++) {
+    markers[i].setMap(null);
+  }
+  markers = [];
+  refitBounds();
 }
 
 async function renderRoute(route_features) {
@@ -237,6 +247,8 @@ async function renderWindows(route_features) {
       title: trails[i].name,
       icon: svgMarker
     });
+
+    markers.push(marker)
   
     marker.addListener("click", () => {
       infowindow.open({
