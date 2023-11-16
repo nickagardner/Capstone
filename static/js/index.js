@@ -168,8 +168,8 @@ async function refitBounds() {
     };
   } catch(err) {
     bounds = new google.maps.LatLngBounds(
-      new google.maps.LatLng(myLatLng.lat-0.01, myLatLng.lng-0.01),
-      new google.maps.LatLng(myLatLng.lat+0.01, myLatLng.lng+0.01));
+      new google.maps.LatLng(myLatLng.lat-0.005, myLatLng.lng-0.005),
+      new google.maps.LatLng(myLatLng.lat+0.005, myLatLng.lng+0.005));
   }
 
   try {

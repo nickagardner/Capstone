@@ -43,6 +43,15 @@ def choose_func(text, llm):
 
     User: I want to ride on roads
     Assistant: prefer_path_type | roads
+
+    User: don't go on fipson dr
+    Assistant: avoid_area | fipson dr
+
+    User: stick to bike lanes
+    Assistant: prefer_path_type | bike lanes
+
+    User: add 1050 wilkins dr and jackson library to stops
+    Assistant: add_waypoints | 1050 wilkins dr | jackson library
     
     User: """
 
@@ -81,14 +90,14 @@ def split_changes(text, llm):
     User: I want to ride on trails and avoid main street
     Assistant: I want to ride on trails | avoid main street
 
-    User: stop at boston common and the empire state building
-    Assistant: stop at boston common and the empire state building
+    User: route through boston common and the empire state building
+    Assistant: route through boston common and the empire state building
 
     User: avoid 42nd ave
     Assistant: avoid 42nd ave
 
-    User: prefer roads and route through 120 charles rd and the golden gate bridge
-    Assistant: prefer roads | route through 120 charles rd and the golden gate bridge
+    User: stop at 120 charles rd and the golden gate bridge and prefer roads
+    Assistant: stop at 120 charles rd and the golden gate bridge | prefer roads
 
     User: avoid johnson bridge and 17 Madison St
     Assistant: avoid johnson bridge and 17 Madison St
@@ -96,14 +105,14 @@ def split_changes(text, llm):
     User: pass through the airport and use city streets
     Assistant: pass through the airport | use city streets
 
-    User: Avoid the downtown area and stop at the park and the museum.
-    Assistant: Avoid the downtown area | stop at the park and the museum.
+    User: skip 12th st and stop at Shelly McFarlin Park and the Natural History Museum.
+    Assistant: skip 12th st | stop at Shelly McFarlin Park and the Natural History Museum.
 
     User: stop at the park
     Assistant: stop at the park
 
-    User: Stay away from the noisy downtown street, stop at the coffee shop and the library.
-    Assistant: Stay away from the noisy downtown street | stop at the coffee shop and the library.
+    User: add 1050 wilkins dr and jackson library to stops, stay away from west ham
+    Assistant: add 1050 wilkins dr and jackson library to stops | stay away from west ham
 
     User: I want to ride on roads
     Assistant: I want to ride on roads
