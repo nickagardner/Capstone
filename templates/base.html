@@ -16,7 +16,7 @@
   </head>
   <body>
     <nav class="navbar navbar-expand-md navbar-light bg-light">
-        <a class="navbar-brand" href="{{ url_for('index')}}">RideWise</a>
+        <a class="navbar-brand text-primary" href="{{ url_for('index')}}">RideWise</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -31,17 +31,15 @@
     <div class="container">
       {% block content %} {% endblock %}
     </div>
-    <label for="start">Start:</label>
-    <input type="text" id="start" name="start">
-    <label for="end">End:</label>
-    <input type="text" id="end" name="end">
-    <button type="button" id="transcribe">transcribe</button>
+    <input class="mt-2" type="text" id="start" name="start" placeholder="Starting location">
+    <input class="mt-2" type="text" id="end" name="end" placeholder="Ending location">
     <form method="post" id="todo-form">
-      <input type="textarea" name="todo" id="todo">
-      <button type="submit">submit</button>
+      <input class="form-control form-control-lg mt-2" type="textarea" name="todo" id="todo" placeholder="Enter route modifications or trail information requests here.">
+      <button type="button" id="transcribe" class="btn btn-primary" style="float: left;">Transcribe</button>
+      <button class="btn btn-primary" type="submit" style="float: right;">Submit</button>
     </form>
     <form action="/" method="POST" id="clear-button">
-      <input type="submit" id="clear" value="Clear Modifications">
+      <input type="submit" id="clear" class="btn btn-danger" style="float: right;" value="Clear Modifications">
     </form>
     <div style="height:100%; width: 100%;"> 
         <div id="map"></div>

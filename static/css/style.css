@@ -1,26 +1,28 @@
 h1 {
-    border: 2px #eee solid;
-    color: rgb(20, 66, 129);
-    text-align: center;
-    padding: 10px;
+  border: 2px #eee solid;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  background-color: #0d6efd;
+  width: 55vw;
 }
 
 /* 
- * Always set the map height explicitly to define the size of the div element
- * that contains the map. 
- */
+* Always set the map height explicitly to define the size of the div element
+* that contains the map. 
+*/
 html, body, #map {
-    margin: auto;
-    padding: 0;
-    height: 90%;
-    width: 75%;
+  margin: auto;
+  padding: 0;
+  height: 90%;
+  width: 75%;
 }
 
 #todo {
-    width: 55vw;
-    height: 5vh;
+  width: 56vw;
+  height: 5vh;
 }
 
 #start, #end {
-    width: 20vw;
+  width: 28vw;
 }

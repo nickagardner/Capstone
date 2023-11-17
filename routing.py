@@ -18,19 +18,17 @@ def codeAddress(address, bounds):
 
 def check_route(intermediate_result, avoid):
     avoid_name = process_string(avoid)
+    coords = []
     for idx, leg in enumerate(intermediate_result["features"][0]["properties"]["legs"]):
         for step in leg["steps"]:
             try:
                 name = step["name"].lower()
                 if avoid_name in name:
                     start_inds = step["from_index"]
-                    end_inds = step["to_index"]
-                    start_coords = intermediate_result["features"][0]["geometry"]["coordinates"][idx][start_inds][::-1]
-                    end_coords = intermediate_result["features"][0]["geometry"]["coordinates"][idx][end_inds][::-1]
-                    return {"start_coords": start_coords, "end_coords": end_coords}
+                    coords.append(intermediate_result["features"][0]["geometry"]["coordinates"][idx][start_inds][::-1])
             except Exception as e:
                 pass
-    return None
+    return coords
 
 def distance(waypoint_coords, end_coords):
   return ((end_coords[0] - waypoint_coords[0])**2 + (end_coords[1] - waypoint_coords[1])**2)**0.5
@@ -92,7 +90,7 @@ def calc_route(start, end, bounds):
             for i in range(len(avoid)):
                 if avoid[i] not in avoided_already:
                     coords = check_route(intermediate_result, avoid[i])
-                    if coords is None:
+                    if len(coords) == 0:
                         new_coords = codeAddress(avoid[i], bounds)
                         if new_coords is not None:
                             dist = distance(new_coords, end_coords)
@@ -107,8 +105,12 @@ def calc_route(start, end, bounds):
                             print("Unable to geocode avoid: " + avoid[i])
                     else:
                         avoided_already.append(avoid[i])
-                        avoided_locs.append(coords["start_coords"])
-                        avoided_locs.append(coords["end_coords"])
+
+                        if len(coords) > 4:
+                            coords = coords[::3]
+
+                        for coord in coords:
+                            avoided_locs.append(coord)
 
             if len(avoided_locs) > 0:
                 avoid_str = "avoid="

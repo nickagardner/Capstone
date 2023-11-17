@@ -101,7 +101,7 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
 
         if test["avoid"] is not None:
             for avoid in test["avoid"]:
-                exists = check_route(route, avoid) != None
+                exists = check_route(route, avoid) != []
                 if exists:
                     print("Did not avoid " + avoid)
                     route_good = False
@@ -206,7 +206,7 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
         route = calc_route(test["start"], test["end"], test["bounds"])
 
         for avoid in test["avoid"]:
-            exists = check_route(route, avoid) != None
+            exists = check_route(route, avoid) != []
             if exists:
                 print("Did not avoid " + avoid)
                 route_good = False
@@ -257,6 +257,6 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
 
 
 if __name__ == "__main__":
-    evaluate_dataset("simple", open_ai=False, llm_num=5, temperature=0.1, top_p=1)
+    evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0, top_p=1)
 
 
