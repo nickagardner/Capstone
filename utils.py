@@ -57,35 +57,12 @@ def process_changes(todo, llm):
     change_dict = get_changes_dict()
     todo_sections = todo.split(".")
     for section in todo_sections:
-        changes = split_changes(section, llm)
-        functions = []
-        parameters = []
-        for change in changes:
-            if len(change) > 0:
-                function, new_parameters = choose_func(change, llm)
-                for param in new_parameters:
-                    functions.append(function)
-                    parameters.append(param)
-                    possibles = globals().copy()
-                    possibles.update(locals())
-                    method = possibles.get(function)
-                    if not method:
-                        print("Method %s not implemented" % function)
-                    else:
-                        method(param, change_dict)
-    update_changes_file(change_dict)
-
-def process_changes_ensemble(todo, llm, iter):
-    for idx in range(iter):
-        init_changes_file("changes" + str(idx))
-        change_dict = get_changes_dict("changes" + str(idx))
-        todo_sections = todo.split(".")
-        for section in todo_sections:
+        if len(section.strip("\"\',.`\n ")) > 0:
             changes = split_changes(section, llm)
             functions = []
             parameters = []
             for change in changes:
-                if len(change) > 0:
+                if len(change.strip("\"\',.`\n ")) > 0:
                     function, new_parameters = choose_func(change, llm)
                     for param in new_parameters:
                         functions.append(function)
@@ -97,6 +74,31 @@ def process_changes_ensemble(todo, llm, iter):
                             print("Method %s not implemented" % function)
                         else:
                             method(param, change_dict)
+    update_changes_file(change_dict)
+
+def process_changes_ensemble(todo, llm, iter):
+    for idx in range(iter):
+        init_changes_file("changes" + str(idx))
+        change_dict = get_changes_dict("changes" + str(idx))
+        todo_sections = todo.split(".")
+        for section in todo_sections:
+            if len(section.strip("\"\',.`\n ")) > 0:
+                changes = split_changes(section, llm)
+                functions = []
+                parameters = []
+                for change in changes:
+                    if len(change.strip("\"\',.`\n ")) > 0:
+                        function, new_parameters = choose_func(change, llm)
+                        for param in new_parameters:
+                            functions.append(function)
+                            parameters.append(param)
+                            possibles = globals().copy()
+                            possibles.update(locals())
+                            method = possibles.get(function)
+                            if not method:
+                                print("Method %s not implemented" % function)
+                            else:
+                                method(param, change_dict)
         update_changes_file(change_dict, "changes" + str(idx))
 
     waypoint_arr = []

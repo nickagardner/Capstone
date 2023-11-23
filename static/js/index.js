@@ -7,19 +7,24 @@ var bounds;
 var defaultBounds;
 var geocoder;
 var recognition;
+var service;
 
 var start_box;
 var end_box;
 
 var svgMarker;
 var markers = [];
+var lastOpened;
 
-function coordToAddress(latlng) {
+var trails_arr = [];
+var trails_loc_arr = [];
+
+function coordToAddress(latlng, element) {
   geocoder
     .geocode({ location: latlng })
     .then((response) => {
       if (response.results[0]) {
-        document.getElementsByName('start')[0].value = response.results[0].formatted_address
+        element.value = response.results[0].formatted_address
       } else {
         window.alert("No results found");
       }
@@ -88,6 +93,8 @@ async function initMap(lat, lon) {
     zoom: 15,
   });
 
+  service = new google.maps.places.PlacesService(map);
+
   const bikeLayer = new google.maps.BicyclingLayer()
   bikeLayer.setMap(map);
 
@@ -134,7 +141,7 @@ async function initMap(lat, lon) {
   });
 
   geocoder = new google.maps.Geocoder();
-  coordToAddress(myLatLng)
+  coordToAddress(myLatLng, document.getElementsByName('start')[0])
   
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
@@ -204,11 +211,6 @@ async function renderRoute(route_features) {
   map.data.addGeoJson(route_features);
 };
 
-function setEndAndRequest(end) {
-  $("#end").val(end);
-  requestRoute();
-};
-
 async function renderWindows(route_features) {
   map.data.forEach(function(feature) {
     map.data.remove(feature);
@@ -217,15 +219,19 @@ async function renderWindows(route_features) {
   let trails = route_features.data
 
   for (var i = 0; i < trails.length; i++) {
+    let imageContent = "";
+    if (trails[i].thumbnail != null) {
+      imageContent = '<div style="text-align: center" id="imageContent">' +
+      '<img width="300" height="300" src="' + trails[i].thumbnail + '"></img>' + 
+      "</div>";
+    }
     const contentString =
     '<div id="content">' +
     '<div id="siteNotice">' +
     "</div>" +
-    '<h1 id="firstHeading" class="firstHeading">' + trails[i].name + '</h1>' +
+    '<h2 id="firstHeading" class="firstHeading">' + trails[i].name + '</h2>' +
     '<div style="text-align: center" id="imageContent">' +
-
-    '<img width="300" height="300" src="' + trails[i].thumbnail + '"></img>' + 
-    "</div>" +
+    imageContent +
     '<div id="bodyContent">' +
     "<p>" + trails[i].description + "</p>" +
     '<p><b>Length:</b> ' + trails[i].length + '</p>' +
@@ -251,10 +257,14 @@ async function renderWindows(route_features) {
     markers.push(marker)
   
     marker.addListener("click", () => {
+      if (lastOpened != null) {
+        lastOpened.close();
+      }
       infowindow.open({
         anchor: marker,
         map,
       });
+      lastOpened = infowindow;
     });
   };
   map.fitBounds(bounds);
