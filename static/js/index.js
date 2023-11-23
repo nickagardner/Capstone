@@ -16,9 +16,6 @@ var svgMarker;
 var markers = [];
 var lastOpened;
 
-var trails_arr = [];
-var trails_loc_arr = [];
-
 function coordToAddress(latlng, element) {
   geocoder
     .geocode({ location: latlng })
@@ -38,6 +35,10 @@ $("#transcribe").click(function () {
 });
 
 async function requestRoute(clear=false){
+  if (markers.length > 0) {
+    $("#todo").val(""),
+    clearWindows();
+  }
   let data_dict = {"start": document.getElementsByName('start')[0].value, 
                "end": document.getElementsByName('end')[0].value,
                "todo": $("#todo").val(),
@@ -146,7 +147,7 @@ async function initMap(lat, lon) {
   $(document).on('submit','#todo-form',function(e) {
     e.preventDefault();
     if (markers.length > 0) {
-      clear();
+      clearWindows();
     };
     requestRoute();
   });
@@ -154,7 +155,7 @@ async function initMap(lat, lon) {
   $(document).on('submit','#clear-button',function(e) {
     e.preventDefault();
     if (markers.length > 0) {
-      clear();
+      clearWindows();
     };
     if ($("#end").val() != "") {
       requestRoute(true);
@@ -194,7 +195,7 @@ async function refitBounds() {
   map.panToBounds(bounds);
 }
 
-async function clear () {
+async function clearWindows () {
   for (var i=0;i<markers.length;i++) {
     markers[i].setMap(null);
   }
