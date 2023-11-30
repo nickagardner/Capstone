@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from langchain.llms import LlamaCpp
 from langchain.llms import OpenAI
@@ -55,6 +56,9 @@ def init_changes_file(file=None):
 
 def process_changes(todo, llm):
     change_dict = get_changes_dict()
+    symbols_to_replace = re.findall(r' [A-Z]*\. ', todo)
+    for symbol in symbols_to_replace:
+        todo = todo.replace(symbol, symbol.replace(".", ""))
     todo_sections = todo.split(".")
     for section in todo_sections:
         if len(section.strip("\"\',.`\n ")) > 0:
@@ -77,6 +81,9 @@ def process_changes(todo, llm):
     update_changes_file(change_dict)
 
 def process_changes_ensemble(todo, llm, iter):
+    symbols_to_replace = re.findall(r' [A-Z]*\. ', todo)
+    for symbol in symbols_to_replace:
+        todo = todo.replace(symbol, symbol.replace(".", ""))
     for idx in range(iter):
         init_changes_file("changes" + str(idx))
         change_dict = get_changes_dict("changes" + str(idx))

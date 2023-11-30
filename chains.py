@@ -161,8 +161,8 @@ def mod_or_trail(text, llm):
         1. Modification - add if the user requests to modify their route.
         2. Trail - add if the user requests information on nearby trails.
     
-    User: prefer trails
-    Assistant: Modification
+    User: what parks are good for biking
+    Assistant: Trail
 
     User: list nearby trails
     Assistant: Trail
@@ -176,14 +176,14 @@ def mod_or_trail(text, llm):
     User: show me Nature Park routes
     Assistant: Trail
 
-    User: Looking for intermediate trails with rating above 3
-    Assistant: Trail
-
     User: avoid johnson bridge and 17 Madison St
     Assistant: Modification
 
-    User: what parks are good for biking
+    User: Looking for intermediate trails with rating above 3
     Assistant: Trail
+
+    User: prefer trails
+    Assistant: Modification
     
     User: """
 
@@ -258,10 +258,10 @@ def extract_trail_info(text, llm):
         prompt=chat_prompt,
     )
 
-    print(f"Mod/Trail input: {text}")
+    print(f"Trail Extract input: {text}")
     result = "Assistant: " + chain.run(text)
 
-    print(f"Mod/Trail result: {result}")
+    print(f"Trail Extract result: {result}")
     result = result + "\n"
 
     pattern = ".*Assistant:.*\n"
