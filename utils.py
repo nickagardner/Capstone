@@ -38,14 +38,14 @@ def prefer_path_type(type, change_dict):
 
 def get_changes_dict(file=None):
     if file is None:
-        file = "changes"
+        file = "changes0"
     with open(os.path.join(os.path.abspath(os.curdir), "project", f"static/js/{file}.json"), "r") as file:
         change_dict = json.load(file)
     return change_dict
 
 def update_changes_file(change_dict, file=None):
     if file is None:
-        file = "changes"
+        file = "changes0"
     with open(os.path.join(os.path.abspath(os.curdir), "project", f"static/js/{file}.json"), "w") as file:
         json.dump(change_dict, file)
 
@@ -54,33 +54,7 @@ def init_changes_file(file=None):
                    "avoided_already":[], "avoided_locs":[]}
     update_changes_file(change_dict, file)
 
-def process_changes(todo, llm):
-    change_dict = get_changes_dict()
-    symbols_to_replace = re.findall(r' [A-Z]*\. ', todo)
-    for symbol in symbols_to_replace:
-        todo = todo.replace(symbol, symbol.replace(".", ""))
-    todo_sections = todo.split(".")
-    for section in todo_sections:
-        if len(section.strip("\"\',.`\n ")) > 0:
-            changes = split_changes(section, llm)
-            functions = []
-            parameters = []
-            for change in changes:
-                if len(change.strip("\"\',.`\n ")) > 0:
-                    function, new_parameters = choose_func(change, llm)
-                    for param in new_parameters:
-                        functions.append(function)
-                        parameters.append(param)
-                        possibles = globals().copy()
-                        possibles.update(locals())
-                        method = possibles.get(function)
-                        if not method:
-                            print("Method %s not implemented" % function)
-                        else:
-                            method(param, change_dict)
-    update_changes_file(change_dict)
-
-def process_changes_ensemble(todo, llm, iter):
+def process_changes(todo, llm, iter=1):
     symbols_to_replace = re.findall(r' [A-Z]*\. ', todo)
     for symbol in symbols_to_replace:
         todo = todo.replace(symbol, symbol.replace(".", ""))
@@ -108,29 +82,30 @@ def process_changes_ensemble(todo, llm, iter):
                                 method(param, change_dict)
         update_changes_file(change_dict, "changes" + str(idx))
 
-    waypoint_arr = []
-    avoid_arr = []
-    path_type_arr = []
-    for i in range(iter):
-        change_dict = get_changes_dict("changes" + str(i))
-        waypoint_arr.append(change_dict["waypoints"])
-        avoid_arr.append(change_dict["avoid"])
-        path_type_arr.append(change_dict["path_type"])
+    if iter > 1:
+        waypoint_arr = []
+        avoid_arr = []
+        path_type_arr = []
+        for i in range(iter):
+            change_dict = get_changes_dict("changes" + str(i))
+            waypoint_arr.append(change_dict["waypoints"])
+            avoid_arr.append(change_dict["avoid"])
+            path_type_arr.append(change_dict["path_type"])
 
-    waypoint_arr = [item for sublist in waypoint_arr for item in sublist]
-    waypoint_arr = list(set([i for i in waypoint_arr if waypoint_arr.count(i)>iter/2]))
-    avoid_arr = [item for sublist in avoid_arr for item in sublist]
-    avoid_arr = list(set([i for i in avoid_arr if avoid_arr.count(i)>iter/2]))
-    try:
-        path_type_arr = max(set(path_type_arr), key=path_type_arr.count)
-    except:
-        path_type_arr = ""
+        waypoint_arr = [item for sublist in waypoint_arr for item in sublist]
+        waypoint_arr = list(set([i for i in waypoint_arr if waypoint_arr.count(i)>iter/2]))
+        avoid_arr = [item for sublist in avoid_arr for item in sublist]
+        avoid_arr = list(set([i for i in avoid_arr if avoid_arr.count(i)>iter/2]))
+        try:
+            path_type_arr = max(set(path_type_arr), key=path_type_arr.count)
+        except:
+            path_type_arr = ""
 
-    change_dict = get_changes_dict()
-    change_dict["waypoints"] = waypoint_arr
-    change_dict["avoid"] = avoid_arr
-    change_dict["path_type"] = path_type_arr
-    update_changes_file(change_dict)
+        change_dict = get_changes_dict()
+        change_dict["waypoints"] = waypoint_arr
+        change_dict["avoid"] = avoid_arr
+        change_dict["path_type"] = path_type_arr
+        update_changes_file(change_dict)
 
 
 def instantiate_llm(temperature=0, top_p=1, open_ai=False):

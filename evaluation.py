@@ -1,5 +1,5 @@
 import json
-from utils import process_changes, instantiate_llm, get_changes_dict, init_changes_file, process_string, process_changes_ensemble
+from utils import process_changes, instantiate_llm, get_changes_dict, init_changes_file, process_string
 from routing import calc_route, check_route, codeAddress
 
 from dotenv import load_dotenv
@@ -33,7 +33,7 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
         if llm_num == 1:
             process_changes(input, llm)
         else:
-            process_changes_ensemble(input, llm, llm_num)
+            process_changes(input, llm, llm_num)
 
         change_dict = get_changes_dict()
 
@@ -151,7 +151,7 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
         if llm_num == 1:
             process_changes(input, llm)
         else:
-            process_changes_ensemble(input, llm, llm_num)
+            process_changes(input, llm, llm_num)
 
         change_dict = get_changes_dict()
 
