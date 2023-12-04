@@ -11,7 +11,11 @@ conversion_dict = {"rd": "road", "st": "street", "dr": "drive", "ave": "avenue",
                    "boulevard", "ln": "lane", "pkwy": "parkway", "pl": "place", "ct": "court", 
                    "cir": "circle", "trl": "trail", "hwy": "highway", "sq": "square", "bl": "boulevard",
                    "ter": "terrace", "plz": "plaza", "n": "north", "s": "south", "e": "east", "w": "west",
-                   "ne": "northeast", "nw": "northwest", "se": "southeast", "sw": "southwest"}
+                   "ne": "northeast", "nw": "northwest", "se": "southeast", "sw": "southwest", "1st": "first",
+                   "2nd": "second", "3rd": "third", "4th": "fourth", "5th": "fifth", "6th": "sixth", "7th": "seventh",
+                   "8th": "eighth", "9th": "ninth", "10th": "tenth", "11th": "eleventh", "12th": "twelfth", "13th": "thirteenth",
+                   "14th": "fourteenth", "15th": "fifteenth", "16th": "sixteenth", "17th": "seventeenth", "18th": "eighteenth",
+                   "19th": "nineteenth", "20th": "twentieth"}
 
 def avoid_area(obstacle, change_dict):
     """Run with anything that the user asks to avoid."""
@@ -59,7 +63,8 @@ def process_changes(todo, llm, iter=1):
     for symbol in symbols_to_replace:
         todo = todo.replace(symbol, symbol.replace(".", ""))
     for idx in range(iter):
-        init_changes_file("changes" + str(idx))
+        if iter > 1:
+            init_changes_file("changes" + str(idx))
         change_dict = get_changes_dict("changes" + str(idx))
         todo_sections = todo.split(".")
         for section in todo_sections:

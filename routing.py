@@ -22,7 +22,7 @@ def check_route(intermediate_result, avoid):
     for idx, leg in enumerate(intermediate_result["features"][0]["properties"]["legs"]):
         for step in leg["steps"]:
             try:
-                name = step["name"].lower()
+                name = process_string(step["name"])
                 if avoid_name in name:
                     start_inds = step["from_index"]
                     coords.append(intermediate_result["features"][0]["geometry"]["coordinates"][idx][start_inds][::-1])
@@ -61,7 +61,7 @@ def calc_route(start, end, bounds):
                 coords = codeAddress(waypoint, bounds)
                 if coords is not None: 
                     dist = distance(coords, end_coords)
-                    if dist < 1: 
+                    if dist < 2: 
                         coord_array.append(coords)
                         dist_array.append(dist)
                     else:
