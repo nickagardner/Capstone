@@ -5,13 +5,13 @@ from routing import codeAddress
 
 import operator
 
-def get_truth(inp, relate, cut):
+def apply_operator(inp, relate, cut):
     ops = {'>': operator.gt,
            '<': operator.lt,
            '>=': operator.ge,
            '<=': operator.le,
            '==': operator.eq}
-    return ops[relate](float(inp), float(cut))
+    return ops[relate](inp, cut)
 
 def find_nearby_trails(address, bounds, details):
     url = "https://trailapi-trailapi.p.rapidapi.com/trails/explore/"
@@ -39,9 +39,9 @@ def find_nearby_trails(address, bounds, details):
             if "Rating" in details:
                 operator = "=="
                 if len(details["Rating"]) > 1:
-                    operator = details["Rating"][0]
+                    operator = details["Rating"][1]
 
-                if not get_truth(response["data"][i]["rating"], operator, details["Rating"][1]):
+                if not apply_operator(float(response["data"][i]["rating"]), operator, float(details["Rating"][0])):
                     response["data"].pop(i)
                     i -= 1
                     item_removed = True
@@ -49,19 +49,17 @@ def find_nearby_trails(address, bounds, details):
             if not item_removed and "Length" in details:
                 operator = "=="
                 if len(details["Length"]) > 1:
-                    operator = details["Length"][0]
+                    operator = details["Length"][1]
 
-                if not get_truth(response["data"][i]["length"], operator, details["Length"][1]):
+                if not apply_operator(float(response["data"][i]["length"]), operator, float(details["Length"][0])):
                     response["data"].pop(i)
                     i -= 1
                     item_removed = True
 
             if not item_removed and "Difficulty" in details:
                 operator = "=="
-                if len(details["Difficulty"]) > 1:
-                    operator = details["Difficulty"][0]
 
-                if not get_truth(response["data"][i]["Difficulty"], operator, details["Difficulty"][1]):
+                if not apply_operator(response["data"][i]["difficulty"], operator, details["Difficulty"][0]):
                     response["data"].pop(i)
                     i -= 1
                     item_removed = True

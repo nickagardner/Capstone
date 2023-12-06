@@ -278,9 +278,9 @@ def extract_trail_info(text, llm):
             value = request.split("(")[1].strip("\"\',.`\n )")
             if len(value.split(" ")) > 1:
                 operator, value = value.split(" ")
-                requests[type] = [operator, value]
+                requests[type] = [value, operator]
             else:
-                requests[type] = value
+                requests[type] = [value]
 
         return requests
 

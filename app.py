@@ -33,7 +33,6 @@ def index():
         start = json["start"]
         end = json["end"]
         bounds = json["bounds"]
-        print(bounds)
         return calc_route(start, end, bounds), 200
     else:
         init_changes_file()

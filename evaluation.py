@@ -3,6 +3,7 @@ from utils import process_changes, instantiate_llm, get_changes_dict, init_chang
 from routing import calc_route, check_route, codeAddress
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D
 import numpy as np
 
 from dotenv import load_dotenv
@@ -226,6 +227,10 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
                 print("Did not include " + waypoint)
                 route_good = False
 
+        if len(route["properties"]["waypoints"][1:-1]) != len(processed_change_waypoints):
+            print("Wrong number of waypoints")
+            route_good = False
+
         mode = route["properties"]["mode"]
         if test["path_type"] is not None and test["path_type"] != mode:
             print("Did not prefer " + test["path_type"])
@@ -291,12 +296,10 @@ def plot_evaluation():
     max_single = max([consolidated_dict[llm_num][temperature]["single"]["miss"] for llm_num in consolidated_dict for temperature in consolidated_dict[llm_num]]) + 1
     max_multi = max([consolidated_dict[llm_num][temperature]["multi"]["miss"] for llm_num in consolidated_dict for temperature in consolidated_dict[llm_num]]) + 1
 
-    max_single_route_misses = max([consolidated_dict[llm_num][temperature]["single"]["total"] - consolidated_dict[llm_num][temperature]["single"]["route_good"] for llm_num in consolidated_dict for temperature in consolidated_dict[llm_num]]) + 1
-    max_multi_route_misses = max([consolidated_dict[llm_num][temperature]["multi"]["total"] - consolidated_dict[llm_num][temperature]["multi"]["route_good"] for llm_num in consolidated_dict for temperature in consolidated_dict[llm_num]]) + 1
-
     include_patch = mpatches.Patch(color='gold', label='Include') 
     miss_patch = mpatches.Patch(color='C3', label='Miss')
     extra_patch = mpatches.Patch(color='C1', label='Extra')
+    comparison_patch = Line2D([0], [0], color="grey", linewidth=3, linestyle='--', label="Single Model")
     
     for llm_num in consolidated_dict:
         for type in ["single", "multi"]:
@@ -309,49 +312,74 @@ def plot_evaluation():
                 if type == "single":
                     ax.bar(idx + 0.1, consolidated_dict[llm_num][temperature][type]["extra"], color="C1", width=0.1)
 
+                    ax.axhline(y=0, xmin=0, xmax=len(temperatures), color="gold", linestyle="--")
+                    ax.axhline(y=3, xmin=0, xmax=len(temperatures), color="C3", linestyle="--")
+                    ax.axhline(y=1, xmin=0, xmax=len(temperatures), color="C1", linestyle="--")
+
+                else:
+                    ax.axhline(y=0, xmin=0, xmax=len(temperatures), color="gold", linestyle="--")
+                    ax.axhline(y=5, xmin=0, xmax=len(temperatures), color="C3", linestyle="--")
+
             if type == "single":
                 max_y = max_single
             else:
                 max_y = max_multi
 
             if type == "single":
-                ax.legend(handles=[miss_patch, include_patch, extra_patch])
+                ax.legend(handles=[miss_patch, include_patch, extra_patch, comparison_patch])
             else:
-                ax.legend(handles=[miss_patch, include_patch])
-            ax.set(xlabel="Temperature", ylabel="Count", title=f"{type.capitalize()} Tests Model Output Evaluation for {llm_num} LLM Ensemble",
-                xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=[0,max_y])
+                ax.legend(handles=[miss_patch, include_patch, comparison_patch])
+            ax.set(xlabel="Temperature", ylabel="Count", title=f"{type.capitalize()} Tests Model Output Evaluation | {llm_num} LLM Ensemble",
+                xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=[-1,max_y])
+            
+            fig.savefig(f"project/images/{type}_{llm_num}_model_eval.png", bbox_inches='tight', dpi=300)
 
             plt.show()
 
-    for llm_num in consolidated_dict:
-        for type in ["single", "multi"]:
-            fig, ax = plt.subplots()
+    colors = ["C1", "C3", "C4"]
+    markers = ["o", "s", "^"]
+    for type in ["single", "multi"]:
+        fig, ax = plt.subplots()
+        idx = 0
+        for llm_num in consolidated_dict:
             temperatures = [key for key in consolidated_dict[llm_num]]
-            for idx, temperature in enumerate(temperatures):
-                ax.bar(idx, consolidated_dict[llm_num][temperature][type]["total"] - consolidated_dict[llm_num][temperature][type]["route_good"], color="C3", width=0.1)
+            error_percs = []
+            for temperature in temperatures:
+                error_percs.append(((consolidated_dict[llm_num][temperature][type]["total"] - consolidated_dict[llm_num][temperature][type]["route_good"]) / consolidated_dict[llm_num][temperature][type]["total"]) * 100)
 
-            if type == "single":
-                max_y = max_single_route_misses
-            else:
-                max_y = max_multi_route_misses
+            ax.plot(np.arange(len(temperatures)), error_percs, color=colors[idx], marker=markers[idx], label=f"Ensemble | {llm_num} Models")
 
-            ax.set(xlabel="Temperature", ylabel="Count", title=f"{type.capitalize()} Test Route Modification Misses for {llm_num} LLM Ensemble",
-                xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=[0,max_y])
+            idx += 1
 
-            plt.show()
+        if type == "single":
+            ax.axhline(y=8.33, xmin=0, xmax=len(temperatures), color="C0", linestyle="--", label="Single Model")
+            ax.axhline(y=5, xmin=0, xmax=len(temperatures), color="C2", linestyle="--", label="ChatGPT")
+        else:
+            ax.axhline(y=25, xmin=0, xmax=len(temperatures), color="C0", linestyle="--", label="Single Model")
+            ax.axhline(y=15, xmin=0, xmax=len(temperatures), color="C2", linestyle="--", label="ChatGPT")
+
+        ax.set(xlabel="Temperature", ylabel="Failed Route Modifications (%)", title=f"{type.capitalize()} Tests Route Error Percentage | {llm_num} LLM Ensemble",
+            xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=[0,100])
+        
+        ax.legend()
+
+        fig.savefig(f"project/images/{type}_route_eval.png", bbox_inches='tight', dpi=300)
+
+        plt.show()
 
 
 
 if __name__ == "__main__":
-    plot_evaluation()
-    # overall_dict = {}
-    # for llm_num in [3, 5, 7]:
-    #     for temperature in [0.05, 0.1, 0.2, 0.5, 1.0]:
-    #         results_dict = evaluate_dataset("simple", open_ai=False, llm_num=llm_num, temperature=temperature, top_p=1)
-    #         overall_dict[f"{llm_num}_{temperature}"] = results_dict
-    # print(overall_dict)
+    # evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0.0, top_p=1)
+    # plot_evaluation()
+    overall_dict = {}
+    for llm_num in [3, 5, 7]:
+        for temperature in [0.05, 0.1, 0.2, 0.5, 1.0]:
+            results_dict = evaluate_dataset("simple", open_ai=False, llm_num=llm_num, temperature=temperature, top_p=1)
+            overall_dict[f"{llm_num}_{temperature}"] = results_dict
+    print(overall_dict)
 
-    # with open("ensemble_eval.json", "w") as outfile: 
-    #     json.dump(overall_dict, outfile)
+    with open("ensemble_eval_2.json", "w") as outfile: 
+        json.dump(overall_dict, outfile)
 
 
