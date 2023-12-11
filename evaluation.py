@@ -485,8 +485,8 @@ def poster_figs():
 
 
 if __name__ == "__main__":
-    # evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0.0, top_p=1)
-    poster_figs()
+    evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0.0, top_p=1)
+    # poster_figs()
     # overall_dict = {}
     # for llm_num in [3, 5, 7]:
     #     for temperature in [0.05, 0.1, 0.2, 0.5, 1.0]:
