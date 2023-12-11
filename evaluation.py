@@ -227,7 +227,7 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
                 print("Did not include " + waypoint)
                 route_good = False
 
-        if len(route["properties"]["waypoints"][1:-1]) != len(processed_change_waypoints):
+        if len(route["properties"]["waypoints"][1:-1]) != len(processed_test_waypoints):
             print("Wrong number of waypoints")
             route_good = False
 
@@ -283,8 +283,8 @@ def evaluate_dataset(dataset_name, llm_num=1, temperature=0.0, top_p=1, open_ai=
     }
 
 
-def plot_evaluation():
-    with open("ensemble_eval.json", "r") as file:
+def plot_evaluation(file="ensemble_eval.json"):
+    with open(file, "r") as file:
         eval_dict = json.load(file)
 
     consolidated_dict = {}
@@ -354,12 +354,14 @@ def plot_evaluation():
         if type == "single":
             ax.axhline(y=8.33, xmin=0, xmax=len(temperatures), color="C0", linestyle="--", label="Single Model")
             ax.axhline(y=5, xmin=0, xmax=len(temperatures), color="C2", linestyle="--", label="ChatGPT")
+            ylim = [0, 30]
         else:
             ax.axhline(y=25, xmin=0, xmax=len(temperatures), color="C0", linestyle="--", label="Single Model")
             ax.axhline(y=15, xmin=0, xmax=len(temperatures), color="C2", linestyle="--", label="ChatGPT")
+            ylim = [0, 100]
 
-        ax.set(xlabel="Temperature", ylabel="Failed Route Modifications (%)", title=f"{type.capitalize()} Tests Route Error Percentage | {llm_num} LLM Ensemble",
-            xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=[0,100])
+        ax.set(xlabel="Temperature", ylabel="Failed Route Modifications (%)", title=f"{type.capitalize()} Tests Route Error Percentage",
+            xticks=np.arange(len(temperatures)), xticklabels=temperatures, ylim=ylim)
         
         ax.legend()
 
@@ -367,19 +369,132 @@ def plot_evaluation():
 
         plt.show()
 
+def poster_figs():
+    plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.sans-serif": "Helvetica",
+    })
+
+    SMALL_SIZE = 14
+    MEDIUM_SIZE = 16
+    BIGGER_SIZE = 18
+
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)
+
+    fig, ax = plt.subplots(ncols=3, nrows=2)
+
+    models = ["Llama 2", "Ensemble", "GPT-3.5"]
+    single_correct = [55, 56, 57]
+    multi_correct = [15, 15, 17]
+
+    def autopct_format(values):
+        def my_format(pct):
+            total = sum(values)
+            val = int(round(pct*total/100.0))
+            return '{v:d}'.format(v=val)
+        return my_format
+
+    for idx, type in enumerate(["Single", "Multi"]):
+        for idx2, model in enumerate(models):
+            if type == "Single":
+                ax[idx, idx2].pie([single_correct[idx2], 60 - single_correct[idx2]], 
+                                colors=["C0", "C3"], startangle=90,
+                                autopct=autopct_format([single_correct[idx2], 
+                                                        60 - single_correct[idx2]]),
+                                wedgeprops = {"edgecolor" : "black", 
+                                              'linewidth': 0.5, 
+                                              'antialiased': True,
+                                              'alpha':0.9})
+            else:
+                ax[idx, idx2].pie([multi_correct[idx2],
+                                   20 - multi_correct[idx2]], 
+                                   colors=["C0", "C3"], startangle=90, 
+                                   autopct=autopct_format([multi_correct[idx2], 
+                                                           20 - multi_correct[idx2]]),
+                                   wedgeprops = {"edgecolor" : "black", 
+                                                'linewidth': 0.5, 
+                                                'antialiased': True,
+                                                'alpha':0.9})
+            ax[idx, idx2].axis('equal')
+        
+    fig.axes[0].set_ylabel(f"Single Tests")
+    fig.axes[3].set_ylabel(f"Multi Tests")
+    fig.axes[3].set_xlabel(models[0])
+    fig.axes[4].set_xlabel(models[1])
+    fig.axes[5].set_xlabel(models[2])
+    fig.suptitle("Route Modification Correctness", fontsize=20)
+
+    fig.savefig(f"project/images/route_correctness.png", bbox_inches='tight', dpi=300)
+
+    plt.show()
+
+    fig, ax = plt.subplots(ncols=1, nrows=2)
+
+    single_correct = [57, 51, 58]
+    single_include = [0, 6, 0]
+    single_extra = [1, 1, 0]
+    single_miss = [3, 3, 2]
+
+    multi_correct = [55, 50, 58]
+    multi_include = [0, 5, 0]
+    multi_miss = [4, 5, 2]
+
+    for idx, type in enumerate(["Single", "Multi"]):
+        if type == "Single":
+            ax[idx].bar(np.arange(len(models))-0.15, [single_correct[idx2] for idx2 in range(len(models))], width=0.1, color="C0", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i-0.15, single_correct[i] + 1, single_correct[i], ha = 'center')
+            ax[idx].bar(np.arange(len(models))-0.05, [single_include[idx2] for idx2 in range(len(models))], width=0.1, color="gold", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i-0.05, single_include[i] + 1, single_include[i], ha = 'center')
+            ax[idx].bar(np.arange(len(models))+0.05, [single_extra[idx2] for idx2 in range(len(models))], width=0.1, color="C1", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i+0.05, single_extra[i] + 1, single_extra[i], ha = 'center')
+            ax[idx].bar(np.arange(len(models))+0.15, [single_miss[idx2] for idx2 in range(len(models))], width=0.1, color="C3", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i+0.15, single_miss[i] + 1, single_miss[i], ha = 'center')
+        else:
+            ax[idx].bar(np.arange(len(models))-0.1, [multi_correct[idx2] for idx2 in range(len(models))], width=0.1, color="C0", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i-0.1, multi_correct[i] + 1, multi_correct[i], ha = 'center')
+            ax[idx].bar(np.arange(len(models))-0, [multi_include[idx2] for idx2 in range(len(models))], width=0.1, color="gold", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i-0.0, multi_include[i] + 1, multi_include[i], ha = 'center')
+            ax[idx].bar(np.arange(len(models))+0.1, [multi_miss[idx2] for idx2 in range(len(models))], width=0.1, color="C3", alpha=0.9)
+            for i in range(len(models)):
+                ax[idx].text(i+0.1, multi_miss[i] + 1, multi_miss[i], ha = 'center')
+
+    ax[0].set(ylabel="Single Tests", xticks=np.arange(len(models)), xticklabels=models,
+              ylim=[0, 65])
+    ax[1].set(ylabel="Multi Tests", xticks=np.arange(len(models)),
+                xticklabels=models, ylim=[0, 65])
+    
+    fig.suptitle("Model Output Evaluation", fontsize=20)
+
+    fig.savefig(f"project/images/model_output_eval.png", bbox_inches='tight', dpi=300)
+
+    plt.show()
+
 
 
 if __name__ == "__main__":
     # evaluate_dataset("simple", open_ai=False, llm_num=1, temperature=0.0, top_p=1)
-    # plot_evaluation()
-    overall_dict = {}
-    for llm_num in [3, 5, 7]:
-        for temperature in [0.05, 0.1, 0.2, 0.5, 1.0]:
-            results_dict = evaluate_dataset("simple", open_ai=False, llm_num=llm_num, temperature=temperature, top_p=1)
-            overall_dict[f"{llm_num}_{temperature}"] = results_dict
-    print(overall_dict)
+    poster_figs()
+    # overall_dict = {}
+    # for llm_num in [3, 5, 7]:
+    #     for temperature in [0.05, 0.1, 0.2, 0.5, 1.0]:
+    #         results_dict = evaluate_dataset("simple", open_ai=False, llm_num=llm_num, temperature=temperature, top_p=1)
+    #         overall_dict[f"{llm_num}_{temperature}"] = results_dict
+    # print(overall_dict)
 
-    with open("ensemble_eval_2.json", "w") as outfile: 
-        json.dump(overall_dict, outfile)
+    # with open("ensemble_eval_2.json", "w") as outfile: 
+    #     json.dump(overall_dict, outfile)
 
 
