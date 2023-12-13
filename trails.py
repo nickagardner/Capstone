@@ -19,7 +19,7 @@ def find_nearby_trails(address, bounds, details):
     coords = codeAddress(address, bounds)
     
     if details is not None and "Distance" in details:
-        radius = details["Distance"]
+        radius = details["Distance"][0]
     else:
         radius = "15"
 
