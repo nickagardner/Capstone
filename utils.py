@@ -113,7 +113,7 @@ def process_changes(todo, llm, iter=1):
         update_changes_file(change_dict)
 
 
-def instantiate_llm(temperature=0, top_p=1, open_ai=False):
+def instantiate_llm(temperature=0, top_p=1, open_ai=False, model="13B-chat"):
     if open_ai:
         llm = OpenAI(temperature=temperature)
     else:
@@ -121,7 +121,7 @@ def instantiate_llm(temperature=0, top_p=1, open_ai=False):
         n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
         # Make sure the model path is correct for your system!
         llm = LlamaCpp(
-            model_path="/Users/ng/Documents/2023 Fall/Capstone/project/llama.cpp/models/13B-chat/gguf-llama2-q4_0.bin",
+            model_path=f"project/llama.cpp/models/{model}/gguf-llama2-q4_0.bin",
             n_gpu_layers=n_gpu_layers,
             n_batch=n_batch,
             temperature=temperature,
